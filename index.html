@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragon's Flight</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
+        <div id="ui-overlay">
+            <!-- Start Menu -->
+            <div id="start-menu" class="menu">
+                <h1 class="game-title">DRAGON'S FLIGHT</h1>
+                <div id="dragon-preview"></div>
+                <button id="start-btn" class="menu-btn">START GAME</button>
+                <button id="controls-btn" class="menu-btn">CONTROLS</button>
+                <div id="high-score-display">HIGH SCORE: <span id="high-score">0</span></div>
+            </div>
+
+            <!-- Controls Screen -->
+            <div id="controls-screen" class="menu hidden">
+                <h2>CONTROLS</h2>
+                <div class="control-info">
+                    <p><span class="key">ARROW KEYS</span> - Move Dragon</p>
+                    <p><span class="key">SPACEBAR</span> - Shoot Fireball</p>
+                    <p><span class="key">P / ESC</span> - Pause Game</p>
+                </div>
+                <button id="back-btn" class="menu-btn">BACK</button>
+            </div>
+
+            <!-- Pause Menu -->
+            <div id="pause-menu" class="menu hidden">
+                <h2>PAUSED</h2>
+                <button id="resume-btn" class="menu-btn">RESUME</button>
+                <button id="restart-btn" class="menu-btn">RESTART</button>
+                <button id="quit-btn" class="menu-btn">QUIT TO MENU</button>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="game-over" class="menu hidden">
+                <h2 id="game-over-title">GAME OVER</h2>
+                <div id="final-score">SCORE: <span id="final-score-value">0</span></div>
+                <div id="new-high-score" class="hidden">NEW HIGH SCORE!</div>
+                <button id="retry-btn" class="menu-btn">PLAY AGAIN</button>
+                <button id="menu-btn" class="menu-btn">MAIN MENU</button>
+            </div>
+
+            <!-- Level Complete Screen -->
+            <div id="level-complete" class="menu hidden">
+                <h2>LEVEL COMPLETE!</h2>
+                <div id="level-score">SCORE: <span id="level-score-value">0</span></div>
+                <button id="next-level-btn" class="menu-btn">NEXT LEVEL</button>
+            </div>
+
+            <!-- Victory Screen -->
+            <div id="victory-screen" class="menu hidden">
+                <h2>VICTORY!</h2>
+                <p>You have defeated all the invaders!</p>
+                <div id="victory-score">FINAL SCORE: <span id="victory-score-value">0</span></div>
+                <div id="victory-high-score" class="hidden">NEW HIGH SCORE!</div>
+                <button id="victory-restart-btn" class="menu-btn">PLAY AGAIN</button>
+                <button id="victory-menu-btn" class="menu-btn">MAIN MENU</button>
+            </div>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud" class="hidden">
+            <div id="hud-left">
+                <div id="health-bar">
+                    <span id="health-label">HP:</span>
+                    <div id="health-hearts"></div>
+                </div>
+                <div id="lives-display">
+                    <span id="lives-label">LIVES:</span>
+                    <span id="lives-count">3</span>
+                </div>
+            </div>
+            <div id="hud-center">
+                <div id="level-display">LEVEL <span id="current-level">1</span></div>
+            </div>
+            <div id="hud-right">
+                <div id="score-display">SCORE: <span id="current-score">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/sprites.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/dragon.js"></script>
+    <script src="js/enemies.js"></script>
+    <script src="js/bosses.js"></script>
+    <script src="js/levels.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
