@@ -6,11 +6,12 @@ class Boss {
         this.canvasWidth = canvasWidth;
 
         // Position
-        this.width = 48;
-        this.height = 48;
+        this.scale = 2; // Render scale
+        this.width = 48 * this.scale;  // 96 pixels
+        this.height = 48 * this.scale; // 96 pixels
         this.x = canvasWidth / 2 - this.width / 2;
         this.y = -this.height;
-        this.targetY = 60;
+        this.targetY = 50;
 
         // State
         this.active = true;
@@ -222,7 +223,7 @@ class Boss {
 
         // Keep within bounds
         this.x = Math.max(10, Math.min(canvasWidth - this.width - 10, this.x));
-        this.y = Math.max(40, Math.min(200, this.y));
+        this.y = Math.max(35, Math.min(180, this.y));
     }
 
     shootStraight(enemyBullets) {
@@ -316,13 +317,13 @@ class Boss {
         // Draw boss
         if (this.isFlashing) {
             ctx.save();
-            spriteRenderer.drawSprite(this.sprite, this.x, this.y, 1);
+            spriteRenderer.drawSprite(this.sprite, this.x, this.y, this.scale);
             ctx.globalCompositeOperation = 'source-atop';
             ctx.fillStyle = 'white';
             ctx.fillRect(this.x, this.y, this.width, this.height);
             ctx.restore();
         } else {
-            spriteRenderer.drawSprite(this.sprite, this.x, this.y, 1);
+            spriteRenderer.drawSprite(this.sprite, this.x, this.y, this.scale);
         }
 
         // Draw health bar
@@ -403,10 +404,10 @@ class Boss {
 
     getHitbox() {
         return {
-            x: this.x + 4,
-            y: this.y + 4,
-            width: this.width - 8,
-            height: this.height - 8
+            x: this.x + 8,
+            y: this.y + 8,
+            width: this.width - 16,
+            height: this.height - 16
         };
     }
 

@@ -24,11 +24,12 @@ class Enemy {
 
     setProperties() {
         const levelMultiplier = 1 + (this.level - 1) * 0.2;
+        this.scale = 2; // Render scale
 
         switch (this.type) {
             case 'basic':
-                this.width = 24;
-                this.height = 24;
+                this.width = 24 * this.scale;  // 48 pixels
+                this.height = 24 * this.scale; // 48 pixels
                 this.speed = 1.5 * levelMultiplier;
                 this.health = 1;
                 this.maxHealth = 1;
@@ -39,8 +40,8 @@ class Enemy {
                 break;
 
             case 'scout':
-                this.width = 24;
-                this.height = 24;
+                this.width = 24 * this.scale;  // 48 pixels
+                this.height = 24 * this.scale; // 48 pixels
                 this.speed = 3 * levelMultiplier;
                 this.health = 1;
                 this.maxHealth = 1;
@@ -51,8 +52,8 @@ class Enemy {
                 break;
 
             case 'bomber':
-                this.width = 24;
-                this.height = 24;
+                this.width = 24 * this.scale;  // 48 pixels
+                this.height = 24 * this.scale; // 48 pixels
                 this.speed = 1 * levelMultiplier;
                 this.health = 3;
                 this.maxHealth = 3;
@@ -63,8 +64,8 @@ class Enemy {
                 break;
 
             default:
-                this.width = 24;
-                this.height = 24;
+                this.width = 24 * this.scale;  // 48 pixels
+                this.height = 24 * this.scale; // 48 pixels
                 this.speed = 1.5;
                 this.health = 1;
                 this.maxHealth = 1;
@@ -184,7 +185,7 @@ class Enemy {
             ctx.globalCompositeOperation = 'source-over';
 
             // Draw sprite
-            spriteRenderer.drawSprite(this.sprite, this.x, this.y, 1);
+            spriteRenderer.drawSprite(this.sprite, this.x, this.y, this.scale);
 
             // Overlay white
             ctx.globalCompositeOperation = 'source-atop';
@@ -193,15 +194,15 @@ class Enemy {
 
             ctx.restore();
         } else {
-            spriteRenderer.drawSprite(this.sprite, this.x, this.y, 1);
+            spriteRenderer.drawSprite(this.sprite, this.x, this.y, this.scale);
         }
 
         // Draw health bar for multi-health enemies
         if (this.maxHealth > 1 && this.health > 0) {
             const barWidth = this.width;
-            const barHeight = 3;
+            const barHeight = 4;
             const barX = this.x;
-            const barY = this.y - 6;
+            const barY = this.y - 8;
 
             ctx.fillStyle = '#333';
             ctx.fillRect(barX, barY, barWidth, barHeight);
@@ -213,10 +214,10 @@ class Enemy {
 
     getHitbox() {
         return {
-            x: this.x + 2,
-            y: this.y + 2,
-            width: this.width - 4,
-            height: this.height - 4
+            x: this.x + 4,
+            y: this.y + 4,
+            width: this.width - 8,
+            height: this.height - 8
         };
     }
 }
@@ -324,10 +325,10 @@ class EnemySpawner {
             type = 'bomber';
         }
 
-        // Spawn position
-        const margin = 30;
-        const x = margin + Math.random() * (this.canvasWidth - margin * 2 - 24);
-        const y = -30;
+        // Spawn position (accounting for larger 48px enemy size)
+        const margin = 50;
+        const x = margin + Math.random() * (this.canvasWidth - margin * 2 - 48);
+        const y = -50;
 
         const enemy = new Enemy(x, y, type, this.level);
         enemies.push(enemy);

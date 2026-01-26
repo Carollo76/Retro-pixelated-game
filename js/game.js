@@ -253,21 +253,21 @@ class Game {
             const frameNames = ['frame1', 'frame2', 'frame3'];
             this.spriteRenderer.drawSprite(
                 DRAGON_SPRITES[frameNames[frame]],
-                this.width / 2 - 16,
+                this.width / 2 - 32,
                 dragonY,
                 2
             );
 
             // Draw fire trail during takeoff
             if (this.introPhase === 2) {
-                for (let i = 0; i < 5; i++) {
-                    const alpha = 1 - i * 0.2;
-                    this.ctx.fillStyle = `rgba(255, ${100 + i * 30}, 0, ${alpha})`;
+                for (let i = 0; i < 8; i++) {
+                    const alpha = 1 - i * 0.12;
+                    this.ctx.fillStyle = `rgba(255, ${100 + i * 20}, 0, ${alpha})`;
                     this.ctx.beginPath();
                     this.ctx.arc(
-                        this.width / 2 + Math.random() * 10 - 5,
-                        dragonY + 70 + i * 15 + Math.random() * 10,
-                        8 - i,
+                        this.width / 2 + Math.random() * 20 - 10,
+                        dragonY + 80 + i * 18 + Math.random() * 15,
+                        12 - i,
                         0, Math.PI * 2
                     );
                     this.ctx.fill();
@@ -293,7 +293,7 @@ class Game {
         this.score = 0;
 
         // Initialize dragon
-        this.dragon = new Dragon(this.width / 2 - 16, this.height - 100);
+        this.dragon = new Dragon(this.width / 2 - 32, this.height - 100);
 
         // Initialize level
         this.initLevel(this.currentLevel);
@@ -323,7 +323,7 @@ class Game {
 
         // Reset dragon position
         if (this.dragon) {
-            this.dragon.reset(this.width / 2 - 16, this.height - 100);
+            this.dragon.reset(this.width / 2 - 32, this.height - 100);
         }
 
         // Update HUD

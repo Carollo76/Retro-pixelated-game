@@ -4,8 +4,9 @@ class Dragon {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 32;
-        this.height = 32;
+        this.scale = 2; // Render scale
+        this.width = 32 * this.scale;  // 64 pixels
+        this.height = 32 * this.scale; // 64 pixels
         this.speed = 5;
 
         // Health and lives
@@ -105,7 +106,7 @@ class Dragon {
         // Draw dragon with slight head bob effect
         // For simplicity, we draw the whole sprite - in a more complex version,
         // we could separate head/body/tail for individual animation
-        spriteRenderer.drawSprite(sprite, this.x, this.y + this.headOffset, 1);
+        spriteRenderer.drawSprite(sprite, this.x, this.y + this.headOffset, this.scale);
     }
 
     shoot(fireballs) {
@@ -153,10 +154,10 @@ class Dragon {
     getHitbox() {
         // Smaller hitbox than sprite for fair gameplay
         return {
-            x: this.x + 8,
-            y: this.y + 8,
-            width: this.width - 16,
-            height: this.height - 16
+            x: this.x + 16,
+            y: this.y + 16,
+            width: this.width - 32,
+            height: this.height - 32
         };
     }
 
@@ -185,9 +186,10 @@ class Fireball {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 8;
-        this.height = 8;
-        this.speed = 8;
+        this.scale = 2; // Render scale
+        this.width = 8 * this.scale;  // 16 pixels
+        this.height = 8 * this.scale; // 16 pixels
+        this.speed = 10;
         this.active = true;
 
         // Animation
@@ -211,19 +213,21 @@ class Fireball {
         ctx.save();
 
         // Draw glow
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
         const gradient = ctx.createRadialGradient(
-            this.x + 4, this.y + 4, 0,
-            this.x + 4, this.y + 4, 12
+            centerX, centerY, 0,
+            centerX, centerY, 20
         );
         gradient.addColorStop(0, 'rgba(255, 200, 50, 0.5)');
         gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(this.x + 4, this.y + 4, 12, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, 20, 0, Math.PI * 2);
         ctx.fill();
 
         // Draw sprite
-        spriteRenderer.drawSprite(FIREBALL_SPRITE, this.x, this.y, 1);
+        spriteRenderer.drawSprite(FIREBALL_SPRITE, this.x, this.y, this.scale);
 
         ctx.restore();
     }
