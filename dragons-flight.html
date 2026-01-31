@@ -1,0 +1,3317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragon's Flight</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background-color: #0f0f23; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Press Start 2P', cursive; overflow: hidden; }
+#game-container { position: relative; width: 480px; height: 640px; border: 4px solid #fcbf49; box-shadow: 0 0 20px rgba(252, 191, 73, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.5); image-rendering: pixelated; image-rendering: crisp-edges; }
+#gameCanvas { display: block; background-color: #1a1a2e; image-rendering: pixelated; image-rendering: crisp-edges; }
+#ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(15, 15, 35, 0.95); pointer-events: auto; padding: 20px; }
+.menu.hidden { display: none; }
+.game-title { font-size: 24px; color: #ff6b35; text-shadow: 4px 4px 0 #8b0000, -2px -2px 0 #ffcc00; margin-bottom: 30px; text-align: center; animation: titlePulse 2s ease-in-out infinite; }
+@keyframes titlePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+#dragon-preview { width: 96px; height: 96px; margin-bottom: 30px; image-rendering: pixelated; }
+.menu-btn { font-family: 'Press Start 2P', cursive; font-size: 12px; padding: 15px 30px; margin: 10px; background: linear-gradient(180deg, #4a90d9 0%, #2c5aa0 100%); color: #ffffff; border: 3px solid #1a3a6e; cursor: pointer; transition: all 0.1s; text-shadow: 2px 2px 0 #1a3a6e; box-shadow: 0 4px 0 #1a3a6e; }
+.menu-btn:hover { background: linear-gradient(180deg, #5ca8f5 0%, #3d6fc4 100%); transform: translateY(-2px); box-shadow: 0 6px 0 #1a3a6e; }
+.menu-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1a3a6e; }
+#high-score-display, #final-score, #level-score, #victory-score { font-size: 14px; color: #ffd700; margin-top: 20px; text-shadow: 2px 2px 0 #8b6914; }
+#new-high-score, #victory-high-score { font-size: 16px; color: #00ff00; margin-top: 15px; animation: flashText 0.5s ease-in-out infinite; }
+@keyframes flashText { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+#game-over-title { color: #ff4444; font-size: 28px; text-shadow: 4px 4px 0 #8b0000; }
+#controls-screen h2 { color: #00ccff; font-size: 20px; margin-bottom: 30px; text-shadow: 2px 2px 0 #006688; }
+.control-info { text-align: left; margin-bottom: 30px; }
+.control-info p { color: #ffffff; font-size: 10px; margin: 15px 0; line-height: 1.8; }
+.control-info .key { color: #ffcc00; background: #333; padding: 5px 10px; border: 2px solid #ffcc00; }
+#hud { position: absolute; top: 0; left: 0; width: 100%; padding: 10px 15px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%); }
+#hud.hidden { display: none; }
+#hud-left, #hud-center, #hud-right { display: flex; flex-direction: column; gap: 5px; }
+#hud-center { align-items: center; }
+#hud-right { align-items: flex-end; }
+#health-bar { display: flex; align-items: center; gap: 8px; }
+#health-label, #lives-label { font-size: 8px; color: #ffffff; }
+#health-hearts { display: flex; gap: 4px; }
+.heart { width: 16px; height: 16px; background: #ff4444; clip-path: polygon(50% 0%, 100% 35%, 100% 70%, 50% 100%, 0% 70%, 0% 35%); }
+.heart.empty { background: #444; }
+#lives-count { font-size: 10px; color: #00ff00; }
+#level-display { font-size: 10px; color: #ffcc00; text-shadow: 2px 2px 0 #8b6914; }
+#score-display { font-size: 10px; color: #ffffff; }
+#current-score { color: #00ffcc; }
+#level-complete h2 { color: #00ff00; font-size: 24px; text-shadow: 3px 3px 0 #008800; margin-bottom: 20px; }
+#victory-screen h2 { color: #ffd700; font-size: 28px; text-shadow: 4px 4px 0 #8b6914; margin-bottom: 10px; animation: victoryPulse 1s ease-in-out infinite; }
+@keyframes victoryPulse { 0%, 100% { transform: scale(1); color: #ffd700; } 50% { transform: scale(1.1); color: #ffee88; } }
+#victory-screen p { font-size: 10px; color: #ffffff; margin-bottom: 20px; }
+#pause-menu h2 { color: #ffcc00; font-size: 24px; text-shadow: 3px 3px 0 #8b6914; margin-bottom: 30px; }
+@media (max-width: 500px) { #game-container { width: 100vw; height: calc(100vw * 1.333); max-height: 100vh; border-width: 2px; } .game-title { font-size: 18px; } .menu-btn { font-size: 10px; padding: 12px 24px; } }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
+        <div id="ui-overlay">
+            <div id="start-menu" class="menu">
+                <h1 class="game-title">DRAGON'S FLIGHT</h1>
+                <div id="dragon-preview"></div>
+                <button id="start-btn" class="menu-btn">START GAME</button>
+                <button id="controls-btn" class="menu-btn">CONTROLS</button>
+                <div id="high-score-display">HIGH SCORE: <span id="high-score">0</span></div>
+            </div>
+            <div id="controls-screen" class="menu hidden">
+                <h2>CONTROLS</h2>
+                <div class="control-info">
+                    <p><span class="key">ARROW KEYS</span> - Move Dragon</p>
+                    <p><span class="key">SPACEBAR</span> - Shoot Fireball</p>
+                    <p><span class="key">P / ESC</span> - Pause Game</p>
+                </div>
+                <button id="back-btn" class="menu-btn">BACK</button>
+            </div>
+            <div id="pause-menu" class="menu hidden">
+                <h2>PAUSED</h2>
+                <button id="resume-btn" class="menu-btn">RESUME</button>
+                <button id="restart-btn" class="menu-btn">RESTART</button>
+                <button id="quit-btn" class="menu-btn">QUIT TO MENU</button>
+            </div>
+            <div id="game-over" class="menu hidden">
+                <h2 id="game-over-title">GAME OVER</h2>
+                <div id="final-score">SCORE: <span id="final-score-value">0</span></div>
+                <div id="new-high-score" class="hidden">NEW HIGH SCORE!</div>
+                <button id="retry-btn" class="menu-btn">PLAY AGAIN</button>
+                <button id="menu-btn" class="menu-btn">MAIN MENU</button>
+            </div>
+            <div id="level-complete" class="menu hidden">
+                <h2>LEVEL COMPLETE!</h2>
+                <div id="level-score">SCORE: <span id="level-score-value">0</span></div>
+                <button id="next-level-btn" class="menu-btn">NEXT LEVEL</button>
+            </div>
+            <div id="victory-screen" class="menu hidden">
+                <h2>VICTORY!</h2>
+                <p>You have defeated all the invaders!</p>
+                <div id="victory-score">FINAL SCORE: <span id="victory-score-value">0</span></div>
+                <div id="victory-high-score" class="hidden">NEW HIGH SCORE!</div>
+                <button id="victory-restart-btn" class="menu-btn">PLAY AGAIN</button>
+                <button id="victory-menu-btn" class="menu-btn">MAIN MENU</button>
+            </div>
+        </div>
+        <div id="hud" class="hidden">
+            <div id="hud-left">
+                <div id="health-bar">
+                    <span id="health-label">HP:</span>
+                    <div id="health-hearts"></div>
+                </div>
+                <div id="lives-display">
+                    <span id="lives-label">LIVES:</span>
+                    <span id="lives-count">3</span>
+                </div>
+            </div>
+            <div id="hud-center">
+                <div id="level-display">LEVEL <span id="current-level">1</span></div>
+            </div>
+            <div id="hud-right">
+                <div id="score-display">SCORE: <span id="current-score">0</span></div>
+            </div>
+        </div>
+    </div>
+    <script>
+// Dragon's Flight - Pixel Art Sprites
+// All sprites are defined as 2D arrays where each number represents a color index
+
+const COLORS = {
+    // Transparent
+    0: 'transparent',
+
+    // Dragon colors
+    1: '#2ecc71',  // Green (body)
+    2: '#27ae60',  // Dark green (scales)
+    3: '#f39c12',  // Orange (belly)
+    4: '#e74c3c',  // Red (fire/accents)
+    5: '#c0392b',  // Dark red
+    6: '#f1c40f',  // Yellow (eyes)
+    7: '#2c3e50',  // Dark (outline)
+    8: '#1abc9c',  // Teal (wings)
+    9: '#16a085',  // Dark teal
+
+    // Spaceship colors
+    10: '#95a5a6', // Gray (metal)
+    11: '#7f8c8d', // Dark gray
+    12: '#3498db', // Blue (lights)
+    13: '#2980b9', // Dark blue
+    14: '#9b59b6', // Purple
+    15: '#8e44ad', // Dark purple
+
+    // Projectiles
+    16: '#e74c3c', // Red (fireball)
+    17: '#f39c12', // Orange (fireball core)
+    18: '#f1c40f', // Yellow (fireball center)
+    19: '#00ff00', // Green (enemy laser)
+    20: '#00cc00', // Dark green laser
+
+    // Boss colors
+    21: '#e74c3c', // Boss red
+    22: '#c0392b', // Boss dark red
+    23: '#ffd700', // Gold
+    24: '#ff6b35', // Orange accent
+
+    // Background elements
+    30: '#87ceeb', // Sky blue
+    31: '#228b22', // Grass green
+    32: '#f4a460', // Sand
+    33: '#00008b', // Space dark blue
+    34: '#ffffff', // White (stars/clouds)
+    35: '#90ee90', // Light green
+    36: '#00bfff', // Water blue
+    37: '#deb887', // Desert tan
+};
+
+// Dragon sprite frames (32x32 pixels)
+const DRAGON_SPRITES = {
+    // Frame 1 - Wings up
+    frame1: [
+        [0,0,0,0,0,0,0,0,0,0,0,8,8,0,0,0,0,0,0,8,8,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,8,8,8,8,0,0,0,0,8,8,8,8,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,8,9,8,8,8,0,0,0,0,8,8,8,9,8,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,8,9,9,8,8,8,0,0,0,0,8,8,8,9,9,8,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,8,9,9,8,8,8,0,0,0,0,0,0,8,8,8,9,9,8,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,8,9,9,8,8,8,0,0,0,0,0,0,0,0,8,8,8,9,9,8,0,0,0,0,0,0],
+        [0,0,0,0,0,0,8,9,8,8,8,0,0,0,0,1,1,0,0,0,0,8,8,8,9,8,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,8,8,8,0,0,0,0,1,1,1,1,0,0,0,0,8,8,8,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,1,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,7,7,7,0,1,1,6,7,1,1,7,6,1,1,0,7,7,7,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,7,4,4,4,7,1,1,7,6,1,1,6,7,1,1,7,4,4,4,7,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,7,4,7,0,1,1,1,1,3,3,1,1,1,1,0,7,4,7,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,7,0,0,0,1,1,3,3,3,3,1,1,0,0,0,7,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,3,3,3,3,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,3,3,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,3,3,3,3,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,3,3,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    ],
+    // Frame 2 - Wings middle
+    frame2: [
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,8,8,8,8,0,0,0,0,0,0,0,0,0,0,8,8,8,8,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,8,9,9,9,8,8,0,0,0,1,1,0,0,0,8,8,9,9,9,8,0,0,0,0,0,0],
+        [0,0,0,0,0,8,9,9,8,8,8,8,0,0,1,1,1,1,0,0,8,8,8,8,9,9,8,0,0,0,0,0],
+        [0,0,0,0,0,8,9,8,8,8,0,0,0,1,2,1,1,2,1,0,0,0,8,8,8,9,8,0,0,0,0,0],
+        [0,0,0,0,0,0,8,8,8,0,0,0,1,1,1,1,1,1,1,1,0,0,0,8,8,8,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,7,7,7,0,1,1,6,7,1,1,7,6,1,1,0,7,7,7,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,7,4,4,4,7,1,1,7,6,1,1,6,7,1,1,7,4,4,4,7,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,7,4,7,0,1,1,1,1,3,3,1,1,1,1,0,7,4,7,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,7,0,0,0,1,1,3,3,3,3,1,1,0,0,0,7,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,3,3,3,3,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,3,3,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,3,3,3,3,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,3,3,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    ],
+    // Frame 3 - Wings down
+    frame3: [
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,1,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,7,7,7,0,1,1,6,7,1,1,7,6,1,1,0,7,7,7,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,7,4,4,4,7,1,1,7,6,1,1,6,7,1,1,7,4,4,4,7,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,7,4,7,8,1,1,1,1,3,3,1,1,1,1,8,7,4,7,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,7,8,8,0,1,1,3,3,3,3,1,1,0,8,8,7,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,8,8,9,8,0,1,1,3,3,3,3,1,1,0,8,9,8,8,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,8,9,9,9,0,0,1,2,3,3,3,3,2,1,0,0,9,9,9,8,0,0,0,0,0,0],
+        [0,0,0,0,0,8,9,9,8,0,0,0,1,1,3,3,3,3,1,1,0,0,0,8,9,9,8,0,0,0,0,0],
+        [0,0,0,0,8,9,8,8,0,0,0,0,0,1,3,3,3,3,1,0,0,0,0,0,8,8,9,8,0,0,0,0],
+        [0,0,0,0,8,8,8,0,0,0,0,0,0,1,2,3,3,2,1,0,0,0,0,0,0,8,8,8,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,3,3,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    ]
+};
+
+// Fireball sprite (8x8)
+const FIREBALL_SPRITE = [
+    [0,0,17,18,18,17,0,0],
+    [0,17,18,18,18,18,17,0],
+    [16,18,18,18,18,18,18,16],
+    [16,18,18,18,18,18,18,16],
+    [16,18,18,18,18,18,18,16],
+    [16,17,18,18,18,18,17,16],
+    [0,16,17,18,18,17,16,0],
+    [0,0,16,16,16,16,0,0]
+];
+
+// Enemy spaceship sprites (24x24)
+const ENEMY_SPRITES = {
+    // Basic fighter
+    basic: [
+        [0,0,0,0,0,0,0,0,0,0,0,11,11,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,11,10,10,11,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,11,10,10,10,10,11,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,11,10,10,12,12,10,10,11,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,11,10,10,10,12,12,10,10,10,11,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,11,10,10,10,10,10,10,10,10,10,10,11,0,0,0,0,0,0],
+        [0,0,0,0,0,11,10,10,10,10,10,10,10,10,10,10,10,10,11,0,0,0,0,0],
+        [0,0,0,0,11,10,10,10,11,11,10,10,10,10,11,11,10,10,10,11,0,0,0,0],
+        [0,0,0,11,10,10,10,11,0,0,11,10,10,11,0,0,11,10,10,10,11,0,0,0],
+        [0,0,11,10,10,10,11,0,0,0,0,10,10,0,0,0,0,11,10,10,10,11,0,0],
+        [0,11,10,10,10,11,0,0,0,0,0,10,10,0,0,0,0,0,11,10,10,10,11,0],
+        [11,10,10,10,11,0,0,0,0,0,0,10,10,0,0,0,0,0,0,11,10,10,10,11],
+        [11,10,10,10,11,0,0,0,0,0,0,10,10,0,0,0,0,0,0,11,10,10,10,11],
+        [0,11,10,10,10,11,0,0,0,0,0,10,10,0,0,0,0,0,11,10,10,10,11,0],
+        [0,0,11,10,10,10,11,0,0,0,0,10,10,0,0,0,0,11,10,10,10,11,0,0],
+        [0,0,0,11,10,10,10,11,0,0,11,10,10,11,0,0,11,10,10,10,11,0,0,0],
+        [0,0,0,0,11,10,10,10,11,11,10,10,10,10,11,11,10,10,10,11,0,0,0,0],
+        [0,0,0,0,0,11,10,10,10,10,10,10,10,10,10,10,10,10,11,0,0,0,0,0],
+        [0,0,0,0,0,0,11,10,10,10,10,10,10,10,10,10,10,11,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,11,10,10,10,12,12,10,10,10,11,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,11,10,10,12,12,10,10,11,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,11,10,10,10,10,11,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,11,10,10,11,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,11,11,0,0,0,0,0,0,0,0,0,0,0]
+    ],
+    // Fast scout
+    scout: [
+        [0,0,0,0,0,0,0,0,0,0,0,14,14,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,14,15,15,14,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,14,15,15,15,15,14,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,14,15,12,12,12,12,15,14,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,14,15,15,12,12,12,12,15,15,14,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,14,15,15,15,15,15,15,15,15,15,15,14,0,0,0,0,0,0],
+        [0,0,0,0,0,14,15,15,15,15,15,15,15,15,15,15,15,15,14,0,0,0,0,0],
+        [0,0,0,14,14,15,15,15,15,15,15,15,15,15,15,15,15,15,14,14,0,0,0,0],
+        [0,0,14,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,14,0,0,0],
+        [0,14,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,14,0,0],
+        [14,15,15,15,15,14,0,0,0,0,0,15,15,0,0,0,0,0,14,15,15,15,15,14],
+        [14,15,15,14,14,0,0,0,0,0,0,15,15,0,0,0,0,0,0,14,14,15,15,14],
+        [14,15,15,14,14,0,0,0,0,0,0,15,15,0,0,0,0,0,0,14,14,15,15,14],
+        [14,15,15,15,15,14,0,0,0,0,0,15,15,0,0,0,0,0,14,15,15,15,15,14],
+        [0,14,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,14,0,0],
+        [0,0,14,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,14,0,0,0],
+        [0,0,0,14,14,15,15,15,15,15,15,15,15,15,15,15,15,15,14,14,0,0,0,0],
+        [0,0,0,0,0,14,15,15,15,15,15,15,15,15,15,15,15,15,14,0,0,0,0,0],
+        [0,0,0,0,0,0,14,15,15,15,15,15,15,15,15,15,15,14,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,14,15,15,15,12,12,15,15,15,14,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,14,15,15,12,12,15,15,14,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,14,15,15,15,15,14,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,14,15,15,14,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,14,14,0,0,0,0,0,0,0,0,0,0,0]
+    ],
+    // Heavy bomber
+    bomber: [
+        [0,0,0,0,0,0,0,0,11,11,11,11,11,11,11,11,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,11,10,10,10,10,10,10,10,10,11,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,11,10,10,10,10,10,10,10,10,10,10,11,0,0,0,0,0,0],
+        [0,0,0,0,0,11,10,10,10,12,12,10,10,12,12,10,10,10,11,0,0,0,0,0],
+        [0,0,0,0,11,10,10,10,10,12,12,10,10,12,12,10,10,10,10,11,0,0,0,0],
+        [0,0,0,11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,0,0,0],
+        [0,0,11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,0,0],
+        [0,11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,0],
+        [11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11],
+        [11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11],
+        [11,10,10,11,11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,10,10,11],
+        [11,10,11,0,0,11,10,10,10,10,10,10,10,10,10,10,10,10,11,0,0,11,10,11],
+        [11,10,11,0,0,11,10,10,10,10,10,10,10,10,10,10,10,10,11,0,0,11,10,11],
+        [11,10,10,11,11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,10,10,11],
+        [11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11],
+        [11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11],
+        [0,11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,0],
+        [0,0,11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,0,0],
+        [0,0,0,11,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,0,0,0],
+        [0,0,0,0,11,10,10,10,10,12,12,10,10,12,12,10,10,10,10,11,0,0,0,0],
+        [0,0,0,0,0,11,10,10,10,12,12,10,10,12,12,10,10,10,11,0,0,0,0,0],
+        [0,0,0,0,0,0,11,10,10,10,10,10,10,10,10,10,10,11,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,11,10,10,10,10,10,10,10,10,11,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,11,11,11,11,11,11,11,11,0,0,0,0,0,0,0,0]
+    ]
+};
+
+// Enemy laser sprite (4x12)
+const ENEMY_LASER_SPRITE = [
+    [0,19,19,0],
+    [19,20,20,19],
+    [19,20,20,19],
+    [19,20,20,19],
+    [19,20,20,19],
+    [19,20,20,19],
+    [19,20,20,19],
+    [19,20,20,19],
+    [19,20,20,19],
+    [19,20,20,19],
+    [0,19,19,0],
+    [0,0,0,0]
+];
+
+// Boss sprites (48x48)
+const BOSS_SPRITES = {
+    // Level 1 Boss - Grassland Guardian
+    boss1: generateBossSprite(21, 22, 23),
+    // Level 2 Boss - Beach Bomber
+    boss2: generateBossSprite(13, 12, 23),
+    // Level 3 Boss - Desert Destroyer
+    boss3: generateBossSprite(24, 5, 23),
+    // Level 4 Boss - Space Emperor
+    boss4: generateBossSprite(15, 14, 23)
+};
+
+function generateBossSprite(color1, color2, accentColor) {
+    // Generate a 48x48 boss sprite
+    const sprite = [];
+    for (let y = 0; y < 48; y++) {
+        const row = [];
+        for (let x = 0; x < 48; x++) {
+            // Create symmetrical boss shape
+            const cx = Math.abs(x - 24);
+            const cy = y;
+
+            // Main body
+            if (cy >= 8 && cy <= 40 && cx <= 20 - Math.abs(cy - 24) / 2) {
+                if (cy >= 16 && cy <= 32 && cx <= 8) {
+                    row.push(accentColor); // Core
+                } else if ((cy === 12 || cy === 36) && cx >= 6 && cx <= 10) {
+                    row.push(12); // Lights
+                } else {
+                    row.push(color1);
+                }
+            }
+            // Wings
+            else if (cy >= 16 && cy <= 32 && cx >= 16 && cx <= 22) {
+                row.push(color2);
+            }
+            // Cannons
+            else if (cy >= 38 && cy <= 44 && (cx >= 8 && cx <= 12)) {
+                row.push(color1);
+            }
+            else {
+                row.push(0);
+            }
+        }
+        sprite.push(row);
+    }
+    return sprite;
+}
+
+// Sprite rendering utility
+class SpriteRenderer {
+    constructor(ctx) {
+        this.ctx = ctx;
+        this.spriteCache = new Map();
+    }
+
+    drawSprite(sprite, x, y, scale = 1) {
+        const cacheKey = `${JSON.stringify(sprite)}_${scale}`;
+
+        if (!this.spriteCache.has(cacheKey)) {
+            // Create cached canvas for this sprite
+            const canvas = document.createElement('canvas');
+            canvas.width = sprite[0].length * scale;
+            canvas.height = sprite.length * scale;
+            const tempCtx = canvas.getContext('2d');
+
+            for (let row = 0; row < sprite.length; row++) {
+                for (let col = 0; col < sprite[row].length; col++) {
+                    const colorIndex = sprite[row][col];
+                    if (colorIndex !== 0) {
+                        tempCtx.fillStyle = COLORS[colorIndex] || '#ff00ff';
+                        tempCtx.fillRect(col * scale, row * scale, scale, scale);
+                    }
+                }
+            }
+
+            this.spriteCache.set(cacheKey, canvas);
+        }
+
+        this.ctx.drawImage(this.spriteCache.get(cacheKey), Math.floor(x), Math.floor(y));
+    }
+
+    clearCache() {
+        this.spriteCache.clear();
+    }
+}
+
+// Export for use in other files
+window.COLORS = COLORS;
+window.DRAGON_SPRITES = DRAGON_SPRITES;
+window.FIREBALL_SPRITE = FIREBALL_SPRITE;
+window.ENEMY_SPRITES = ENEMY_SPRITES;
+window.ENEMY_LASER_SPRITE = ENEMY_LASER_SPRITE;
+window.BOSS_SPRITES = BOSS_SPRITES;
+window.SpriteRenderer = SpriteRenderer;
+
+// Dragon's Flight - 8-bit Audio System
+// Uses Web Audio API to generate retro sound effects and music
+
+class AudioManager {
+    constructor() {
+        this.audioContext = null;
+        this.masterGain = null;
+        this.musicGain = null;
+        this.sfxGain = null;
+        this.currentMusic = null;
+        this.musicEnabled = true;
+        this.sfxEnabled = true;
+        this.initialized = false;
+    }
+
+    init() {
+        if (this.initialized) return;
+
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.masterGain = this.audioContext.createGain();
+            this.masterGain.connect(this.audioContext.destination);
+            this.masterGain.gain.value = 0.3;
+
+            this.musicGain = this.audioContext.createGain();
+            this.musicGain.connect(this.masterGain);
+            this.musicGain.gain.value = 0.4;
+
+            this.sfxGain = this.audioContext.createGain();
+            this.sfxGain.connect(this.masterGain);
+            this.sfxGain.gain.value = 0.6;
+
+            this.initialized = true;
+        } catch (e) {
+            console.warn('Web Audio API not supported:', e);
+        }
+    }
+
+    resume() {
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+    }
+
+    // Create an oscillator with envelope
+    createOscillator(type, frequency, startTime, duration, gainValue = 0.3) {
+        if (!this.initialized || !this.sfxEnabled) return;
+
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(frequency, startTime);
+
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(gainValue, startTime + 0.01);
+        gain.gain.linearRampToValueAtTime(gainValue * 0.7, startTime + duration * 0.3);
+        gain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+
+        return { osc, gain };
+    }
+
+    // Sound Effects
+    playShoot() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+
+        // Fireball sound - descending tone with noise
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.15);
+    }
+
+    playEnemyShoot() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.1);
+    }
+
+    playExplosion() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+
+        // White noise for explosion
+        const bufferSize = this.audioContext.sampleRate * 0.3;
+        const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.audioContext.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.audioContext.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1000, now);
+        filter.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+
+        const gain = this.audioContext.createGain();
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.sfxGain);
+
+        noise.start(now);
+        noise.stop(now + 0.3);
+
+        // Low frequency boom
+        const osc = this.audioContext.createOscillator();
+        const oscGain = this.audioContext.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.2);
+
+        oscGain.gain.setValueAtTime(0.3, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.2);
+    }
+
+    playBossExplosion() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+
+        // Multiple explosions
+        for (let i = 0; i < 5; i++) {
+            setTimeout(() => this.playExplosion(), i * 150);
+        }
+
+        // Victory fanfare
+        const notes = [523, 659, 784, 1047];
+        notes.forEach((freq, i) => {
+            this.createOscillator('square', freq, now + 0.8 + i * 0.15, 0.2, 0.15);
+        });
+    }
+
+    playHit() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.setValueAtTime(150, now + 0.05);
+        osc.frequency.setValueAtTime(100, now + 0.1);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.15);
+    }
+
+    playDeath() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+
+        // Descending tone
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(500, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.5);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.5);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(now);
+        osc.stop(now + 0.5);
+
+        // Explosion after
+        setTimeout(() => this.playExplosion(), 200);
+    }
+
+    playPowerUp() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+        const notes = [262, 330, 392, 523];
+
+        notes.forEach((freq, i) => {
+            this.createOscillator('square', freq, now + i * 0.08, 0.15, 0.15);
+        });
+    }
+
+    playLevelComplete() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+        // Victory melody
+        const melody = [
+            { freq: 523, time: 0 },
+            { freq: 587, time: 0.15 },
+            { freq: 659, time: 0.3 },
+            { freq: 784, time: 0.45 },
+            { freq: 880, time: 0.6 },
+            { freq: 1047, time: 0.8 }
+        ];
+
+        melody.forEach(note => {
+            this.createOscillator('square', note.freq, now + note.time, 0.2, 0.2);
+        });
+    }
+
+    playGameOver() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+        // Sad descending melody
+        const melody = [
+            { freq: 392, time: 0 },
+            { freq: 349, time: 0.3 },
+            { freq: 330, time: 0.6 },
+            { freq: 262, time: 0.9 }
+        ];
+
+        melody.forEach(note => {
+            this.createOscillator('sawtooth', note.freq, now + note.time, 0.4, 0.2);
+        });
+    }
+
+    playMenuSelect() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+        this.createOscillator('square', 440, now, 0.1, 0.15);
+    }
+
+    playBossWarning() {
+        if (!this.initialized || !this.sfxEnabled) return;
+        this.resume();
+
+        const now = this.audioContext.currentTime;
+
+        // Warning siren
+        for (let i = 0; i < 3; i++) {
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+
+            osc.type = 'square';
+            const startTime = now + i * 0.4;
+            osc.frequency.setValueAtTime(440, startTime);
+            osc.frequency.setValueAtTime(880, startTime + 0.2);
+
+            gain.gain.setValueAtTime(0.2, startTime);
+            gain.gain.setValueAtTime(0.2, startTime + 0.35);
+            gain.gain.linearRampToValueAtTime(0, startTime + 0.4);
+
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+
+            osc.start(startTime);
+            osc.stop(startTime + 0.4);
+        }
+    }
+
+    // Background Music
+    startMusic(level) {
+        if (!this.initialized || !this.musicEnabled) return;
+        this.stopMusic();
+        this.resume();
+
+        this.currentMusic = {
+            playing: true,
+            level: level
+        };
+
+        this.playMusicLoop(level);
+    }
+
+    playMusicLoop(level) {
+        if (!this.currentMusic || !this.currentMusic.playing) return;
+
+        const now = this.audioContext.currentTime;
+
+        // Different melodies for each level
+        const melodies = {
+            1: [ // Grassland - upbeat
+                { freq: 262, dur: 0.2 }, { freq: 330, dur: 0.2 }, { freq: 392, dur: 0.2 }, { freq: 330, dur: 0.2 },
+                { freq: 294, dur: 0.2 }, { freq: 349, dur: 0.2 }, { freq: 392, dur: 0.4 },
+                { freq: 262, dur: 0.2 }, { freq: 392, dur: 0.2 }, { freq: 523, dur: 0.4 }
+            ],
+            2: [ // Beach - relaxed
+                { freq: 392, dur: 0.3 }, { freq: 330, dur: 0.3 }, { freq: 262, dur: 0.3 }, { freq: 294, dur: 0.3 },
+                { freq: 330, dur: 0.6 }, { freq: 392, dur: 0.3 }, { freq: 330, dur: 0.3 }
+            ],
+            3: [ // Desert - tense
+                { freq: 220, dur: 0.2 }, { freq: 233, dur: 0.2 }, { freq: 220, dur: 0.2 }, { freq: 196, dur: 0.4 },
+                { freq: 220, dur: 0.2 }, { freq: 262, dur: 0.2 }, { freq: 247, dur: 0.4 },
+                { freq: 220, dur: 0.2 }, { freq: 196, dur: 0.4 }
+            ],
+            4: [ // Space - epic
+                { freq: 196, dur: 0.4 }, { freq: 262, dur: 0.4 }, { freq: 247, dur: 0.2 }, { freq: 220, dur: 0.2 },
+                { freq: 196, dur: 0.4 }, { freq: 294, dur: 0.4 }, { freq: 262, dur: 0.8 }
+            ],
+            boss: [ // Boss battle - intense
+                { freq: 147, dur: 0.15 }, { freq: 147, dur: 0.15 }, { freq: 175, dur: 0.15 }, { freq: 147, dur: 0.15 },
+                { freq: 139, dur: 0.3 }, { freq: 131, dur: 0.3 },
+                { freq: 147, dur: 0.15 }, { freq: 147, dur: 0.15 }, { freq: 196, dur: 0.15 }, { freq: 185, dur: 0.45 }
+            ]
+        };
+
+        const melody = melodies[level] || melodies[1];
+        let time = 0;
+
+        melody.forEach(note => {
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(note.freq, now + time);
+
+            gain.gain.setValueAtTime(0, now + time);
+            gain.gain.linearRampToValueAtTime(0.15, now + time + 0.02);
+            gain.gain.setValueAtTime(0.15, now + time + note.dur - 0.02);
+            gain.gain.linearRampToValueAtTime(0, now + time + note.dur);
+
+            osc.connect(gain);
+            gain.connect(this.musicGain);
+
+            osc.start(now + time);
+            osc.stop(now + time + note.dur);
+
+            time += note.dur;
+        });
+
+        // Bass line
+        const bassNotes = level === 'boss' ?
+            [{ freq: 73, dur: 0.3 }, { freq: 73, dur: 0.3 }, { freq: 65, dur: 0.3 }, { freq: 73, dur: 0.3 }] :
+            [{ freq: 65, dur: 0.4 }, { freq: 73, dur: 0.4 }, { freq: 82, dur: 0.4 }, { freq: 73, dur: 0.4 }];
+
+        let bassTime = 0;
+        bassNotes.forEach(note => {
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(note.freq, now + bassTime);
+
+            gain.gain.setValueAtTime(0.1, now + bassTime);
+            gain.gain.setValueAtTime(0.1, now + bassTime + note.dur - 0.05);
+            gain.gain.linearRampToValueAtTime(0, now + bassTime + note.dur);
+
+            osc.connect(gain);
+            gain.connect(this.musicGain);
+
+            osc.start(now + bassTime);
+            osc.stop(now + bassTime + note.dur);
+
+            bassTime += note.dur;
+        });
+
+        // Schedule next loop
+        const loopDuration = time * 1000;
+        this.musicTimeout = setTimeout(() => {
+            if (this.currentMusic && this.currentMusic.playing) {
+                this.playMusicLoop(level);
+            }
+        }, loopDuration);
+    }
+
+    stopMusic() {
+        if (this.currentMusic) {
+            this.currentMusic.playing = false;
+        }
+        if (this.musicTimeout) {
+            clearTimeout(this.musicTimeout);
+        }
+    }
+
+    toggleMusic() {
+        this.musicEnabled = !this.musicEnabled;
+        if (!this.musicEnabled) {
+            this.stopMusic();
+        }
+        return this.musicEnabled;
+    }
+
+    toggleSFX() {
+        this.sfxEnabled = !this.sfxEnabled;
+        return this.sfxEnabled;
+    }
+
+    setMasterVolume(value) {
+        if (this.masterGain) {
+            this.masterGain.gain.value = value;
+        }
+    }
+}
+
+// Create global audio manager
+window.audioManager = new AudioManager();
+
+// Dragon's Flight - Dragon Hero Class
+
+class Dragon {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.scale = 2; // Render scale
+        this.width = 32 * this.scale;  // 64 pixels
+        this.height = 32 * this.scale; // 64 pixels
+        this.speed = 5;
+
+        // Health and lives
+        this.maxHealth = 5;
+        this.health = this.maxHealth;
+        this.lives = 3;
+
+        // Animation
+        this.animationFrame = 0;
+        this.animationTimer = 0;
+        this.animationSpeed = 8; // frames per animation update
+        this.frames = ['frame1', 'frame2', 'frame3', 'frame2'];
+
+        // Movement state
+        this.moving = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+
+        // Shooting
+        this.canShoot = true;
+        this.shootCooldown = 200; // ms
+        this.lastShootTime = 0;
+
+        // Invincibility after taking damage
+        this.invincible = false;
+        this.invincibleTimer = 0;
+        this.invincibleDuration = 2000; // 2 seconds
+        this.blinkTimer = 0;
+        this.visible = true;
+
+        // Head bob for animation
+        this.headOffset = 0;
+        this.headBobTimer = 0;
+
+        // Tail wag
+        this.tailOffset = 0;
+        this.tailWagTimer = 0;
+    }
+
+    update(deltaTime, canvasWidth, canvasHeight) {
+        // Update animation
+        this.animationTimer++;
+        if (this.animationTimer >= this.animationSpeed) {
+            this.animationTimer = 0;
+            this.animationFrame = (this.animationFrame + 1) % this.frames.length;
+        }
+
+        // Head bob animation
+        this.headBobTimer += deltaTime;
+        this.headOffset = Math.sin(this.headBobTimer * 0.005) * 2;
+
+        // Tail wag animation
+        this.tailWagTimer += deltaTime;
+        this.tailOffset = Math.sin(this.tailWagTimer * 0.008) * 3;
+
+        // Movement
+        if (this.moving.up && this.y > 60) {
+            this.y -= this.speed;
+        }
+        if (this.moving.down && this.y < canvasHeight - this.height - 10) {
+            this.y += this.speed;
+        }
+        if (this.moving.left && this.x > 10) {
+            this.x -= this.speed;
+        }
+        if (this.moving.right && this.x < canvasWidth - this.width - 10) {
+            this.x += this.speed;
+        }
+
+        // Update invincibility
+        if (this.invincible) {
+            this.invincibleTimer += deltaTime;
+            this.blinkTimer += deltaTime;
+
+            // Blink effect
+            if (this.blinkTimer >= 100) {
+                this.blinkTimer = 0;
+                this.visible = !this.visible;
+            }
+
+            // End invincibility
+            if (this.invincibleTimer >= this.invincibleDuration) {
+                this.invincible = false;
+                this.visible = true;
+            }
+        }
+    }
+
+    draw(ctx, spriteRenderer) {
+        if (!this.visible) return;
+
+        const sprite = DRAGON_SPRITES[this.frames[this.animationFrame]];
+
+        // Draw dragon with slight head bob effect
+        // For simplicity, we draw the whole sprite - in a more complex version,
+        // we could separate head/body/tail for individual animation
+        spriteRenderer.drawSprite(sprite, this.x, this.y + this.headOffset, this.scale);
+    }
+
+    shoot(fireballs) {
+        const now = Date.now();
+        if (now - this.lastShootTime >= this.shootCooldown) {
+            this.lastShootTime = now;
+
+            // Create fireball at dragon's position (from mouth area)
+            const fireball = new Fireball(
+                this.x + this.width / 2 - 4,
+                this.y - 8
+            );
+            fireballs.push(fireball);
+
+            window.audioManager.playShoot();
+            return true;
+        }
+        return false;
+    }
+
+    takeDamage(amount = 1) {
+        if (this.invincible) return false;
+
+        this.health -= amount;
+        window.audioManager.playHit();
+
+        if (this.health <= 0) {
+            this.lives--;
+            if (this.lives > 0) {
+                // Respawn with full health
+                this.health = this.maxHealth;
+                this.invincible = true;
+                this.invincibleTimer = 0;
+                window.audioManager.playDeath();
+            }
+            return true; // Indicates a life was lost
+        } else {
+            // Brief invincibility after damage
+            this.invincible = true;
+            this.invincibleTimer = 0;
+        }
+        return false;
+    }
+
+    getHitbox() {
+        // Smaller hitbox than sprite for fair gameplay
+        return {
+            x: this.x + 16,
+            y: this.y + 16,
+            width: this.width - 32,
+            height: this.height - 32
+        };
+    }
+
+    reset(x, y) {
+        this.x = x;
+        this.y = y;
+        this.health = this.maxHealth;
+        this.invincible = true;
+        this.invincibleTimer = 0;
+        this.visible = true;
+    }
+
+    fullReset(x, y) {
+        this.reset(x, y);
+        this.lives = 3;
+        this.invincible = false;
+    }
+
+    isAlive() {
+        return this.lives > 0;
+    }
+}
+
+// Fireball projectile class
+class Fireball {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.scale = 2; // Render scale
+        this.width = 8 * this.scale;  // 16 pixels
+        this.height = 8 * this.scale; // 16 pixels
+        this.speed = 10;
+        this.active = true;
+
+        // Animation
+        this.animationTimer = 0;
+        this.rotation = 0;
+    }
+
+    update(deltaTime) {
+        this.y -= this.speed;
+        this.animationTimer += deltaTime;
+        this.rotation += 0.2;
+
+        // Deactivate if off screen
+        if (this.y < -this.height) {
+            this.active = false;
+        }
+    }
+
+    draw(ctx, spriteRenderer) {
+        // Add glow effect
+        ctx.save();
+
+        // Draw glow
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
+        const gradient = ctx.createRadialGradient(
+            centerX, centerY, 0,
+            centerX, centerY, 20
+        );
+        gradient.addColorStop(0, 'rgba(255, 200, 50, 0.5)');
+        gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 20, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw sprite
+        spriteRenderer.drawSprite(FIREBALL_SPRITE, this.x, this.y, this.scale);
+
+        ctx.restore();
+    }
+
+    getHitbox() {
+        return {
+            x: this.x,
+            y: this.y,
+            width: this.width,
+            height: this.height
+        };
+    }
+}
+
+// Export classes
+window.Dragon = Dragon;
+window.Fireball = Fireball;
+
+// Dragon's Flight - Enemy System
+
+class Enemy {
+    constructor(x, y, type = 'basic', level = 1) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.level = level;
+
+        // Set properties based on type
+        this.setProperties();
+
+        this.active = true;
+        this.shootTimer = Math.random() * this.shootCooldown;
+
+        // Movement pattern
+        this.movementTimer = 0;
+        this.movementPhase = Math.random() * Math.PI * 2;
+
+        // Flash when hit
+        this.flashTimer = 0;
+        this.isFlashing = false;
+    }
+
+    setProperties() {
+        const levelMultiplier = 1 + (this.level - 1) * 0.2;
+        this.scale = 2; // Render scale
+
+        switch (this.type) {
+            case 'basic':
+                this.width = 24 * this.scale;  // 48 pixels
+                this.height = 24 * this.scale; // 48 pixels
+                this.speed = 1.5 * levelMultiplier;
+                this.health = 1;
+                this.maxHealth = 1;
+                this.score = 100;
+                this.shootCooldown = 2000 / levelMultiplier;
+                this.bulletSpeed = 4;
+                this.sprite = ENEMY_SPRITES.basic;
+                break;
+
+            case 'scout':
+                this.width = 24 * this.scale;  // 48 pixels
+                this.height = 24 * this.scale; // 48 pixels
+                this.speed = 3 * levelMultiplier;
+                this.health = 1;
+                this.maxHealth = 1;
+                this.score = 150;
+                this.shootCooldown = 1500 / levelMultiplier;
+                this.bulletSpeed = 5;
+                this.sprite = ENEMY_SPRITES.scout;
+                break;
+
+            case 'bomber':
+                this.width = 24 * this.scale;  // 48 pixels
+                this.height = 24 * this.scale; // 48 pixels
+                this.speed = 1 * levelMultiplier;
+                this.health = 3;
+                this.maxHealth = 3;
+                this.score = 300;
+                this.shootCooldown = 1000 / levelMultiplier;
+                this.bulletSpeed = 3;
+                this.sprite = ENEMY_SPRITES.bomber;
+                break;
+
+            default:
+                this.width = 24 * this.scale;  // 48 pixels
+                this.height = 24 * this.scale; // 48 pixels
+                this.speed = 1.5;
+                this.health = 1;
+                this.maxHealth = 1;
+                this.score = 100;
+                this.shootCooldown = 2000;
+                this.bulletSpeed = 4;
+                this.sprite = ENEMY_SPRITES.basic;
+        }
+    }
+
+    update(deltaTime, canvasWidth, canvasHeight, dragonX, dragonY) {
+        // Update movement
+        this.movementTimer += deltaTime;
+
+        // Different movement patterns based on type
+        switch (this.type) {
+            case 'basic':
+                // Move down with slight sine wave
+                this.y += this.speed;
+                this.x += Math.sin(this.movementTimer * 0.003 + this.movementPhase) * 1;
+                break;
+
+            case 'scout':
+                // Fast diagonal movement
+                this.y += this.speed * 0.5;
+                this.x += Math.sin(this.movementTimer * 0.005 + this.movementPhase) * 3;
+                break;
+
+            case 'bomber':
+                // Slow descent, tracks player horizontally
+                this.y += this.speed;
+                const targetX = dragonX - this.width / 2;
+                const diff = targetX - this.x;
+                this.x += Math.sign(diff) * Math.min(Math.abs(diff) * 0.02, 1);
+                break;
+        }
+
+        // Keep within bounds
+        this.x = Math.max(0, Math.min(canvasWidth - this.width, this.x));
+
+        // Update shoot timer
+        this.shootTimer += deltaTime;
+
+        // Update flash effect
+        if (this.isFlashing) {
+            this.flashTimer += deltaTime;
+            if (this.flashTimer >= 100) {
+                this.isFlashing = false;
+                this.flashTimer = 0;
+            }
+        }
+
+        // Deactivate if off screen
+        if (this.y > canvasHeight + 50) {
+            this.active = false;
+        }
+    }
+
+    canShoot() {
+        if (this.shootTimer >= this.shootCooldown) {
+            this.shootTimer = 0;
+            return true;
+        }
+        return false;
+    }
+
+    shoot(enemyBullets, dragonX, dragonY) {
+        if (!this.canShoot()) return;
+
+        // Calculate direction to dragon
+        const dx = dragonX - (this.x + this.width / 2);
+        const dy = dragonY - (this.y + this.height / 2);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        let vx = 0;
+        let vy = this.bulletSpeed;
+
+        // Only aim if dragon is below enemy
+        if (dy > 0 && distance > 0) {
+            // Add some aiming for harder enemies
+            if (this.type === 'bomber') {
+                vx = (dx / distance) * this.bulletSpeed * 0.5;
+                vy = (dy / distance) * this.bulletSpeed;
+            } else if (this.type === 'scout') {
+                vx = (dx / distance) * this.bulletSpeed * 0.3;
+                vy = this.bulletSpeed;
+            }
+        }
+
+        const bullet = new EnemyBullet(
+            this.x + this.width / 2 - 2,
+            this.y + this.height,
+            vx,
+            vy
+        );
+        enemyBullets.push(bullet);
+
+        window.audioManager.playEnemyShoot();
+    }
+
+    takeDamage(amount = 1) {
+        this.health -= amount;
+        this.isFlashing = true;
+        this.flashTimer = 0;
+
+        if (this.health <= 0) {
+            this.active = false;
+            return true; // Destroyed
+        }
+        return false;
+    }
+
+    draw(ctx, spriteRenderer) {
+        if (this.isFlashing) {
+            // Draw white flash
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over';
+
+            // Draw sprite
+            spriteRenderer.drawSprite(this.sprite, this.x, this.y, this.scale);
+
+            // Overlay white
+            ctx.globalCompositeOperation = 'source-atop';
+            ctx.fillStyle = 'white';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+
+            ctx.restore();
+        } else {
+            spriteRenderer.drawSprite(this.sprite, this.x, this.y, this.scale);
+        }
+
+        // Draw health bar for multi-health enemies
+        if (this.maxHealth > 1 && this.health > 0) {
+            const barWidth = this.width;
+            const barHeight = 4;
+            const barX = this.x;
+            const barY = this.y - 8;
+
+            ctx.fillStyle = '#333';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(barX, barY, barWidth * (this.health / this.maxHealth), barHeight);
+        }
+    }
+
+    getHitbox() {
+        return {
+            x: this.x + 4,
+            y: this.y + 4,
+            width: this.width - 8,
+            height: this.height - 8
+        };
+    }
+}
+
+// Enemy bullet class
+class EnemyBullet {
+    constructor(x, y, vx = 0, vy = 4) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.width = 4;
+        this.height = 12;
+        this.active = true;
+    }
+
+    update(deltaTime, canvasHeight) {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.y > canvasHeight + 20 || this.y < -20 ||
+            this.x < -20 || this.x > 500) {
+            this.active = false;
+        }
+    }
+
+    draw(ctx, spriteRenderer) {
+        // Draw glow
+        ctx.save();
+        const gradient = ctx.createRadialGradient(
+            this.x + 2, this.y + 6, 0,
+            this.x + 2, this.y + 6, 10
+        );
+        gradient.addColorStop(0, 'rgba(0, 255, 0, 0.4)');
+        gradient.addColorStop(1, 'rgba(0, 255, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.x + 2, this.y + 6, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        spriteRenderer.drawSprite(ENEMY_LASER_SPRITE, this.x, this.y, 1);
+    }
+
+    getHitbox() {
+        return {
+            x: this.x,
+            y: this.y,
+            width: this.width,
+            height: this.height
+        };
+    }
+}
+
+// Enemy spawner class
+class EnemySpawner {
+    constructor(canvasWidth) {
+        this.canvasWidth = canvasWidth;
+        this.spawnTimer = 0;
+        this.waveTimer = 0;
+        this.currentWave = 0;
+        this.enemiesSpawned = 0;
+        this.totalEnemiesForLevel = 0;
+    }
+
+    setLevel(level) {
+        this.level = level;
+        this.currentWave = 0;
+        this.enemiesSpawned = 0;
+
+        // More enemies in later levels
+        this.totalEnemiesForLevel = 15 + (level - 1) * 5;
+
+        // Spawn rate increases with level
+        this.baseSpawnRate = Math.max(800, 1500 - (level - 1) * 200);
+    }
+
+    update(deltaTime, enemies) {
+        if (this.enemiesSpawned >= this.totalEnemiesForLevel) {
+            return false; // Level complete (enemies-wise)
+        }
+
+        this.spawnTimer += deltaTime;
+
+        // Dynamic spawn rate
+        const spawnRate = this.baseSpawnRate - Math.min(this.currentWave * 50, 300);
+
+        if (this.spawnTimer >= spawnRate) {
+            this.spawnTimer = 0;
+            this.spawnEnemy(enemies);
+        }
+
+        return true;
+    }
+
+    spawnEnemy(enemies) {
+        // Determine enemy type based on level and randomness
+        const rand = Math.random();
+        let type = 'basic';
+
+        if (this.level >= 2 && rand > 0.7) {
+            type = 'scout';
+        }
+        if (this.level >= 3 && rand > 0.85) {
+            type = 'bomber';
+        }
+
+        // Spawn position (accounting for larger 48px enemy size)
+        const margin = 50;
+        const x = margin + Math.random() * (this.canvasWidth - margin * 2 - 48);
+        const y = -50;
+
+        const enemy = new Enemy(x, y, type, this.level);
+        enemies.push(enemy);
+
+        this.enemiesSpawned++;
+        this.currentWave++;
+    }
+
+    isLevelComplete() {
+        return this.enemiesSpawned >= this.totalEnemiesForLevel;
+    }
+
+    getProgress() {
+        return this.enemiesSpawned / this.totalEnemiesForLevel;
+    }
+
+    reset() {
+        this.spawnTimer = 0;
+        this.waveTimer = 0;
+        this.currentWave = 0;
+        this.enemiesSpawned = 0;
+    }
+}
+
+// Explosion effect class
+class Explosion {
+    constructor(x, y, size = 'small') {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.frame = 0;
+        this.maxFrames = size === 'large' ? 20 : 12;
+        this.frameTimer = 0;
+        this.frameSpeed = 30;
+        this.active = true;
+
+        this.maxRadius = size === 'large' ? 40 : 20;
+        this.particles = [];
+
+        // Create particles
+        const particleCount = size === 'large' ? 12 : 6;
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 / particleCount) * i;
+            this.particles.push({
+                x: 0,
+                y: 0,
+                vx: Math.cos(angle) * (2 + Math.random() * 2),
+                vy: Math.sin(angle) * (2 + Math.random() * 2),
+                size: 3 + Math.random() * 3
+            });
+        }
+    }
+
+    update(deltaTime) {
+        this.frameTimer += deltaTime;
+
+        if (this.frameTimer >= this.frameSpeed) {
+            this.frameTimer = 0;
+            this.frame++;
+
+            if (this.frame >= this.maxFrames) {
+                this.active = false;
+            }
+        }
+
+        // Update particles
+        this.particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vx *= 0.95;
+            p.vy *= 0.95;
+        });
+    }
+
+    draw(ctx) {
+        const progress = this.frame / this.maxFrames;
+        const alpha = 1 - progress;
+        const radius = this.maxRadius * (0.5 + progress * 0.5);
+
+        ctx.save();
+
+        // Draw explosion circle
+        const gradient = ctx.createRadialGradient(
+            this.x, this.y, 0,
+            this.x, this.y, radius
+        );
+        gradient.addColorStop(0, `rgba(255, 255, 200, ${alpha})`);
+        gradient.addColorStop(0.3, `rgba(255, 150, 50, ${alpha * 0.8})`);
+        gradient.addColorStop(0.6, `rgba(255, 50, 0, ${alpha * 0.5})`);
+        gradient.addColorStop(1, `rgba(100, 0, 0, 0)`);
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw particles
+        this.particles.forEach(p => {
+            ctx.fillStyle = `rgba(255, ${150 + Math.random() * 100}, 0, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(this.x + p.x, this.y + p.y, p.size * (1 - progress), 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        ctx.restore();
+    }
+}
+
+// Export classes
+window.Enemy = Enemy;
+window.EnemyBullet = EnemyBullet;
+window.EnemySpawner = EnemySpawner;
+window.Explosion = Explosion;
+
+// Dragon's Flight - Boss System
+
+class Boss {
+    constructor(canvasWidth, level) {
+        this.level = level;
+        this.canvasWidth = canvasWidth;
+
+        // Position
+        this.scale = 2; // Render scale
+        this.width = 48 * this.scale;  // 96 pixels
+        this.height = 48 * this.scale; // 96 pixels
+        this.x = canvasWidth / 2 - this.width / 2;
+        this.y = -this.height;
+        this.targetY = 50;
+
+        // State
+        this.active = true;
+        this.entering = true;
+        this.defeated = false;
+        this.defeatTimer = 0;
+
+        // Set properties based on level
+        this.setProperties();
+
+        // Movement
+        this.movementTimer = 0;
+        this.attackTimer = 0;
+        this.currentPattern = 0;
+
+        // Flash effect
+        this.isFlashing = false;
+        this.flashTimer = 0;
+
+        // Get sprite
+        this.sprite = BOSS_SPRITES[`boss${level}`];
+    }
+
+    setProperties() {
+        // Health scales with level (10-20 hits)
+        this.maxHealth = 10 + (this.level - 1) * 3;
+        this.health = this.maxHealth;
+
+        // Score
+        this.score = 1000 * this.level;
+
+        // Attack cooldown
+        this.attackCooldown = Math.max(800, 1500 - (this.level - 1) * 200);
+
+        // Movement speed
+        this.speed = 1 + this.level * 0.3;
+
+        // Pattern timings
+        this.patternDuration = 5000;
+        this.patternTimer = 0;
+
+        // Define attack patterns per boss
+        this.patterns = this.getPatterns();
+    }
+
+    getPatterns() {
+        switch (this.level) {
+            case 1: // Grassland Guardian - Simple patterns
+                return [
+                    'sideToSide',
+                    'spreadShot',
+                    'sideToSide',
+                    'tripleShot'
+                ];
+
+            case 2: // Beach Bomber - Faster movement
+                return [
+                    'zigzag',
+                    'spreadShot',
+                    'charge',
+                    'circleShot'
+                ];
+
+            case 3: // Desert Destroyer - Aggressive
+                return [
+                    'trackPlayer',
+                    'rapidFire',
+                    'zigzag',
+                    'spreadShot'
+                ];
+
+            case 4: // Space Emperor - All patterns
+                return [
+                    'trackPlayer',
+                    'circleShot',
+                    'charge',
+                    'rapidFire',
+                    'spreadShot'
+                ];
+
+            default:
+                return ['sideToSide', 'spreadShot'];
+        }
+    }
+
+    update(deltaTime, dragonX, dragonY, enemyBullets, canvasWidth) {
+        if (this.defeated) {
+            this.defeatTimer += deltaTime;
+            return;
+        }
+
+        // Enter screen
+        if (this.entering) {
+            this.y += 1;
+            if (this.y >= this.targetY) {
+                this.y = this.targetY;
+                this.entering = false;
+            }
+            return;
+        }
+
+        // Update timers
+        this.movementTimer += deltaTime;
+        this.attackTimer += deltaTime;
+        this.patternTimer += deltaTime;
+
+        // Change pattern periodically
+        if (this.patternTimer >= this.patternDuration) {
+            this.patternTimer = 0;
+            this.currentPattern = (this.currentPattern + 1) % this.patterns.length;
+        }
+
+        // Execute current pattern
+        this.executePattern(deltaTime, dragonX, dragonY, enemyBullets, canvasWidth);
+
+        // Update flash
+        if (this.isFlashing) {
+            this.flashTimer += deltaTime;
+            if (this.flashTimer >= 100) {
+                this.isFlashing = false;
+                this.flashTimer = 0;
+            }
+        }
+    }
+
+    executePattern(deltaTime, dragonX, dragonY, enemyBullets, canvasWidth) {
+        const pattern = this.patterns[this.currentPattern];
+
+        switch (pattern) {
+            case 'sideToSide':
+                this.x += Math.sin(this.movementTimer * 0.002) * this.speed * 2;
+                if (this.attackTimer >= this.attackCooldown) {
+                    this.shootStraight(enemyBullets);
+                    this.attackTimer = 0;
+                }
+                break;
+
+            case 'zigzag':
+                this.x += Math.sin(this.movementTimer * 0.004) * this.speed * 3;
+                this.y = this.targetY + Math.sin(this.movementTimer * 0.002) * 20;
+                if (this.attackTimer >= this.attackCooldown) {
+                    this.shootStraight(enemyBullets);
+                    this.attackTimer = 0;
+                }
+                break;
+
+            case 'trackPlayer':
+                const targetX = dragonX - this.width / 2;
+                const diff = targetX - this.x;
+                this.x += Math.sign(diff) * Math.min(Math.abs(diff) * 0.03, this.speed * 2);
+                if (this.attackTimer >= this.attackCooldown * 0.8) {
+                    this.shootAtPlayer(enemyBullets, dragonX, dragonY);
+                    this.attackTimer = 0;
+                }
+                break;
+
+            case 'charge':
+                // Periodic charge towards player
+                const chargePhase = (this.movementTimer % 3000) / 3000;
+                if (chargePhase < 0.3) {
+                    // Wind up
+                    this.y = this.targetY - Math.sin(chargePhase * Math.PI / 0.3) * 10;
+                } else if (chargePhase < 0.5) {
+                    // Charge
+                    this.y = this.targetY + (chargePhase - 0.3) * 200;
+                } else {
+                    // Return
+                    this.y = this.targetY + (1 - chargePhase) * 80;
+                }
+                this.x += Math.sin(this.movementTimer * 0.003) * this.speed;
+                if (this.attackTimer >= this.attackCooldown) {
+                    this.shootStraight(enemyBullets);
+                    this.attackTimer = 0;
+                }
+                break;
+
+            case 'spreadShot':
+                this.x += Math.sin(this.movementTimer * 0.002) * this.speed;
+                if (this.attackTimer >= this.attackCooldown * 1.5) {
+                    this.shootSpread(enemyBullets, 5);
+                    this.attackTimer = 0;
+                }
+                break;
+
+            case 'tripleShot':
+                this.x += Math.sin(this.movementTimer * 0.002) * this.speed;
+                if (this.attackTimer >= this.attackCooldown) {
+                    this.shootSpread(enemyBullets, 3);
+                    this.attackTimer = 0;
+                }
+                break;
+
+            case 'circleShot':
+                this.x = canvasWidth / 2 - this.width / 2 + Math.sin(this.movementTimer * 0.002) * 100;
+                if (this.attackTimer >= this.attackCooldown * 2) {
+                    this.shootCircle(enemyBullets, 8);
+                    this.attackTimer = 0;
+                }
+                break;
+
+            case 'rapidFire':
+                this.x += Math.sin(this.movementTimer * 0.003) * this.speed * 2;
+                if (this.attackTimer >= this.attackCooldown * 0.4) {
+                    this.shootAtPlayer(enemyBullets, dragonX, dragonY);
+                    this.attackTimer = 0;
+                }
+                break;
+        }
+
+        // Keep within bounds
+        this.x = Math.max(10, Math.min(canvasWidth - this.width - 10, this.x));
+        this.y = Math.max(35, Math.min(180, this.y));
+    }
+
+    shootStraight(enemyBullets) {
+        const bullet = new EnemyBullet(
+            this.x + this.width / 2 - 2,
+            this.y + this.height,
+            0,
+            5
+        );
+        enemyBullets.push(bullet);
+        window.audioManager.playEnemyShoot();
+    }
+
+    shootAtPlayer(enemyBullets, dragonX, dragonY) {
+        const dx = dragonX - (this.x + this.width / 2);
+        const dy = dragonY - (this.y + this.height / 2);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 0) {
+            const speed = 5;
+            const bullet = new EnemyBullet(
+                this.x + this.width / 2 - 2,
+                this.y + this.height,
+                (dx / distance) * speed,
+                (dy / distance) * speed
+            );
+            enemyBullets.push(bullet);
+            window.audioManager.playEnemyShoot();
+        }
+    }
+
+    shootSpread(enemyBullets, count) {
+        const spreadAngle = Math.PI / 4; // 45 degrees total spread
+        const startAngle = Math.PI / 2 - spreadAngle / 2;
+        const angleStep = spreadAngle / (count - 1);
+
+        for (let i = 0; i < count; i++) {
+            const angle = startAngle + angleStep * i;
+            const speed = 4;
+            const bullet = new EnemyBullet(
+                this.x + this.width / 2 - 2,
+                this.y + this.height,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed
+            );
+            enemyBullets.push(bullet);
+        }
+        window.audioManager.playEnemyShoot();
+    }
+
+    shootCircle(enemyBullets, count) {
+        const angleStep = (Math.PI * 2) / count;
+
+        for (let i = 0; i < count; i++) {
+            const angle = angleStep * i;
+            const speed = 3;
+            const bullet = new EnemyBullet(
+                this.x + this.width / 2 - 2,
+                this.y + this.height / 2,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed
+            );
+            enemyBullets.push(bullet);
+        }
+        window.audioManager.playEnemyShoot();
+    }
+
+    takeDamage(amount = 1) {
+        if (this.defeated || this.entering) return false;
+
+        this.health -= amount;
+        this.isFlashing = true;
+        this.flashTimer = 0;
+
+        if (this.health <= 0) {
+            this.defeated = true;
+            this.defeatTimer = 0;
+            window.audioManager.playBossExplosion();
+            return true;
+        }
+        return false;
+    }
+
+    draw(ctx, spriteRenderer) {
+        if (this.defeated) {
+            // Draw defeat explosion animation
+            this.drawDefeatAnimation(ctx);
+            return;
+        }
+
+        // Draw boss
+        if (this.isFlashing) {
+            ctx.save();
+            spriteRenderer.drawSprite(this.sprite, this.x, this.y, this.scale);
+            ctx.globalCompositeOperation = 'source-atop';
+            ctx.fillStyle = 'white';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.restore();
+        } else {
+            spriteRenderer.drawSprite(this.sprite, this.x, this.y, this.scale);
+        }
+
+        // Draw health bar
+        if (!this.entering) {
+            const barWidth = 200;
+            const barHeight = 8;
+            const barX = (this.canvasWidth - barWidth) / 2;
+            const barY = 20;
+
+            // Background
+            ctx.fillStyle = '#333';
+            ctx.fillRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4);
+
+            // Health
+            const healthPercent = this.health / this.maxHealth;
+            let healthColor = '#00ff00';
+            if (healthPercent < 0.3) healthColor = '#ff0000';
+            else if (healthPercent < 0.6) healthColor = '#ffff00';
+
+            ctx.fillStyle = healthColor;
+            ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+
+            // Border
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4);
+
+            // Boss name
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px "Press Start 2P", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.getBossName(), this.canvasWidth / 2, barY + barHeight + 14);
+        }
+    }
+
+    drawDefeatAnimation(ctx) {
+        // Multiple explosions during defeat
+        const numExplosions = Math.floor(this.defeatTimer / 200);
+
+        for (let i = 0; i < Math.min(numExplosions, 10); i++) {
+            const offsetX = (Math.sin(i * 1234.5) * 0.5 + 0.5) * this.width;
+            const offsetY = (Math.cos(i * 5678.9) * 0.5 + 0.5) * this.height;
+            const size = 15 + Math.random() * 10;
+            const alpha = Math.max(0, 1 - (this.defeatTimer - i * 200) / 500);
+
+            if (alpha > 0) {
+                ctx.save();
+                ctx.globalAlpha = alpha;
+
+                const gradient = ctx.createRadialGradient(
+                    this.x + offsetX, this.y + offsetY, 0,
+                    this.x + offsetX, this.y + offsetY, size
+                );
+                gradient.addColorStop(0, '#fff');
+                gradient.addColorStop(0.3, '#ff0');
+                gradient.addColorStop(0.6, '#f00');
+                gradient.addColorStop(1, 'transparent');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x + offsetX, this.y + offsetY, size, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+    }
+
+    getBossName() {
+        const names = [
+            'GRASSLAND GUARDIAN',
+            'BEACH BOMBER',
+            'DESERT DESTROYER',
+            'SPACE EMPEROR'
+        ];
+        return names[this.level - 1] || 'BOSS';
+    }
+
+    getHitbox() {
+        return {
+            x: this.x + 8,
+            y: this.y + 8,
+            width: this.width - 16,
+            height: this.height - 16
+        };
+    }
+
+    isDefeated() {
+        return this.defeated && this.defeatTimer > 2000;
+    }
+}
+
+// Export
+window.Boss = Boss;
+
+// Dragon's Flight - Level System and Backgrounds
+
+class Level {
+    constructor(levelNumber, canvasWidth, canvasHeight) {
+        this.levelNumber = levelNumber;
+        this.canvasWidth = canvasWidth;
+        this.canvasHeight = canvasHeight;
+
+        // Scrolling background
+        this.scrollY = 0;
+        this.scrollSpeed = 1;
+
+        // Background elements
+        this.backgroundElements = [];
+        this.parallaxElements = [];
+
+        // Initialize background based on level
+        this.initBackground();
+    }
+
+    initBackground() {
+        switch (this.levelNumber) {
+            case 1:
+                this.initGrassland();
+                break;
+            case 2:
+                this.initBeach();
+                break;
+            case 3:
+                this.initDesert();
+                break;
+            case 4:
+                this.initSpace();
+                break;
+        }
+    }
+
+    initGrassland() {
+        this.skyColor = '#87CEEB';
+        this.groundColor = '#228B22';
+
+        // Generate grass patches
+        for (let i = 0; i < 30; i++) {
+            this.backgroundElements.push({
+                type: 'grass',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight * 2,
+                width: 10 + Math.random() * 20,
+                height: 15 + Math.random() * 10,
+                color: Math.random() > 0.5 ? '#32CD32' : '#228B22'
+            });
+        }
+
+        // Generate flowers
+        for (let i = 0; i < 15; i++) {
+            this.backgroundElements.push({
+                type: 'flower',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight * 2,
+                size: 4 + Math.random() * 4,
+                color: ['#FF69B4', '#FFD700', '#FF4500', '#9370DB'][Math.floor(Math.random() * 4)]
+            });
+        }
+
+        // Clouds (parallax)
+        for (let i = 0; i < 8; i++) {
+            this.parallaxElements.push({
+                type: 'cloud',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight,
+                width: 40 + Math.random() * 60,
+                speed: 0.3 + Math.random() * 0.3
+            });
+        }
+    }
+
+    initBeach() {
+        this.skyColor = '#87CEEB';
+        this.groundColor = '#F4A460';
+
+        // Sand texture
+        for (let i = 0; i < 50; i++) {
+            this.backgroundElements.push({
+                type: 'sandDot',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight * 2,
+                size: 1 + Math.random() * 2,
+                color: Math.random() > 0.5 ? '#DEB887' : '#D2B48C'
+            });
+        }
+
+        // Waves (water)
+        for (let i = 0; i < 10; i++) {
+            this.backgroundElements.push({
+                type: 'wave',
+                x: 0,
+                y: i * 150 + Math.random() * 50,
+                width: this.canvasWidth,
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+
+        // Seashells
+        for (let i = 0; i < 8; i++) {
+            this.backgroundElements.push({
+                type: 'shell',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight * 2,
+                size: 5 + Math.random() * 5,
+                rotation: Math.random() * Math.PI * 2
+            });
+        }
+
+        // Clouds
+        for (let i = 0; i < 6; i++) {
+            this.parallaxElements.push({
+                type: 'cloud',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight * 0.3,
+                width: 50 + Math.random() * 50,
+                speed: 0.2 + Math.random() * 0.2
+            });
+        }
+    }
+
+    initDesert() {
+        this.skyColor = '#FFD89B';
+        this.groundColor = '#DEB887';
+
+        // Sand dunes
+        for (let i = 0; i < 8; i++) {
+            this.backgroundElements.push({
+                type: 'dune',
+                x: Math.random() * this.canvasWidth,
+                y: i * 200,
+                width: 100 + Math.random() * 150,
+                height: 30 + Math.random() * 20
+            });
+        }
+
+        // Cacti
+        for (let i = 0; i < 6; i++) {
+            this.backgroundElements.push({
+                type: 'cactus',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight * 2,
+                height: 20 + Math.random() * 30
+            });
+        }
+
+        // Desert rocks
+        for (let i = 0; i < 10; i++) {
+            this.backgroundElements.push({
+                type: 'rock',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight * 2,
+                size: 8 + Math.random() * 12
+            });
+        }
+
+        // Heat shimmer (parallax)
+        for (let i = 0; i < 3; i++) {
+            this.parallaxElements.push({
+                type: 'shimmer',
+                y: 100 + i * 200,
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+    }
+
+    initSpace() {
+        this.skyColor = '#0a0a1f';
+        this.groundColor = '#0a0a1f';
+
+        // Stars (multiple layers)
+        for (let i = 0; i < 100; i++) {
+            this.backgroundElements.push({
+                type: 'star',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight * 2,
+                size: 1 + Math.random() * 2,
+                brightness: 0.5 + Math.random() * 0.5,
+                twinkleSpeed: 0.002 + Math.random() * 0.003
+            });
+        }
+
+        // Distant galaxies
+        for (let i = 0; i < 3; i++) {
+            this.backgroundElements.push({
+                type: 'galaxy',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight * 2,
+                size: 30 + Math.random() * 50,
+                rotation: Math.random() * Math.PI * 2,
+                color: ['#4a0080', '#000080', '#800040'][i]
+            });
+        }
+
+        // Nebula clouds (parallax)
+        for (let i = 0; i < 4; i++) {
+            this.parallaxElements.push({
+                type: 'nebula',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight,
+                width: 100 + Math.random() * 100,
+                height: 80 + Math.random() * 80,
+                color: ['rgba(100, 0, 150, 0.2)', 'rgba(0, 100, 150, 0.2)', 'rgba(150, 50, 100, 0.2)'][i % 3],
+                speed: 0.1 + Math.random() * 0.1
+            });
+        }
+
+        // Shooting stars
+        for (let i = 0; i < 2; i++) {
+            this.parallaxElements.push({
+                type: 'shootingStar',
+                x: Math.random() * this.canvasWidth,
+                y: Math.random() * this.canvasHeight,
+                speed: 3 + Math.random() * 2,
+                length: 20 + Math.random() * 30,
+                active: false,
+                timer: Math.random() * 5000
+            });
+        }
+    }
+
+    update(deltaTime) {
+        // Scroll background
+        this.scrollY += this.scrollSpeed;
+
+        // Update parallax elements
+        this.parallaxElements.forEach(elem => {
+            if (elem.type === 'cloud') {
+                elem.x -= elem.speed;
+                if (elem.x + elem.width < 0) {
+                    elem.x = this.canvasWidth;
+                }
+            } else if (elem.type === 'nebula') {
+                elem.y += elem.speed;
+                if (elem.y > this.canvasHeight) {
+                    elem.y = -elem.height;
+                }
+            } else if (elem.type === 'shootingStar') {
+                elem.timer += deltaTime;
+                if (!elem.active && elem.timer > 5000 + Math.random() * 10000) {
+                    elem.active = true;
+                    elem.x = Math.random() * this.canvasWidth;
+                    elem.y = -20;
+                    elem.timer = 0;
+                }
+                if (elem.active) {
+                    elem.x += elem.speed;
+                    elem.y += elem.speed * 1.5;
+                    if (elem.y > this.canvasHeight) {
+                        elem.active = false;
+                    }
+                }
+            } else if (elem.type === 'shimmer') {
+                elem.phase += deltaTime * 0.005;
+            }
+        });
+
+        // Update wave phases
+        this.backgroundElements.forEach(elem => {
+            if (elem.type === 'wave') {
+                elem.phase += deltaTime * 0.002;
+            } else if (elem.type === 'star') {
+                elem.phase = (elem.phase || 0) + deltaTime * elem.twinkleSpeed;
+            }
+        });
+    }
+
+    draw(ctx) {
+        // Draw sky/background color
+        ctx.fillStyle = this.skyColor;
+        ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+        // Draw level-specific background
+        switch (this.levelNumber) {
+            case 1:
+                this.drawGrassland(ctx);
+                break;
+            case 2:
+                this.drawBeach(ctx);
+                break;
+            case 3:
+                this.drawDesert(ctx);
+                break;
+            case 4:
+                this.drawSpace(ctx);
+                break;
+        }
+    }
+
+    drawGrassland(ctx) {
+        // Draw ground
+        ctx.fillStyle = this.groundColor;
+        ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+        // Draw clouds (parallax, behind)
+        this.parallaxElements.forEach(elem => {
+            if (elem.type === 'cloud') {
+                this.drawCloud(ctx, elem.x, elem.y, elem.width);
+            }
+        });
+
+        // Draw grass and flowers
+        this.backgroundElements.forEach(elem => {
+            const y = (elem.y + this.scrollY) % (this.canvasHeight * 2) - this.canvasHeight * 0.5;
+
+            if (elem.type === 'grass') {
+                ctx.fillStyle = elem.color;
+                // Draw grass blades
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(elem.x + i * 5, y + elem.height);
+                    ctx.lineTo(elem.x + i * 5 + 2, y);
+                    ctx.lineTo(elem.x + i * 5 + 4, y + elem.height);
+                    ctx.fill();
+                }
+            } else if (elem.type === 'flower') {
+                // Stem
+                ctx.fillStyle = '#228B22';
+                ctx.fillRect(elem.x + elem.size / 2 - 1, y, 2, elem.size * 2);
+
+                // Petals
+                ctx.fillStyle = elem.color;
+                ctx.beginPath();
+                ctx.arc(elem.x + elem.size / 2, y, elem.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Center
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(elem.x + elem.size / 2, y, elem.size / 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+    }
+
+    drawBeach(ctx) {
+        // Draw sand base
+        ctx.fillStyle = this.groundColor;
+        ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+        // Draw water sections
+        this.backgroundElements.forEach(elem => {
+            const y = (elem.y + this.scrollY * 0.5) % (this.canvasHeight * 2) - 200;
+
+            if (elem.type === 'wave') {
+                // Water
+                ctx.fillStyle = 'rgba(0, 150, 200, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(0, y + 50);
+                for (let x = 0; x <= this.canvasWidth; x += 20) {
+                    const waveY = y + Math.sin(x * 0.02 + elem.phase) * 10 + 50;
+                    ctx.lineTo(x, waveY);
+                }
+                ctx.lineTo(this.canvasWidth, y + 100);
+                ctx.lineTo(0, y + 100);
+                ctx.fill();
+
+                // Foam
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                for (let x = 0; x <= this.canvasWidth; x += 10) {
+                    const foamY = y + Math.sin(x * 0.03 + elem.phase * 1.5) * 5 + 45;
+                    ctx.fillRect(x, foamY, 6, 3);
+                }
+            } else if (elem.type === 'shell') {
+                ctx.fillStyle = '#FFF8DC';
+                ctx.save();
+                ctx.translate(elem.x, y);
+                ctx.rotate(elem.rotation);
+                ctx.beginPath();
+                ctx.arc(0, 0, elem.size, 0, Math.PI);
+                ctx.fill();
+                ctx.restore();
+            } else if (elem.type === 'sandDot') {
+                ctx.fillStyle = elem.color;
+                ctx.fillRect(elem.x, y, elem.size, elem.size);
+            }
+        });
+
+        // Draw clouds
+        this.parallaxElements.forEach(elem => {
+            if (elem.type === 'cloud') {
+                this.drawCloud(ctx, elem.x, elem.y, elem.width);
+            }
+        });
+    }
+
+    drawDesert(ctx) {
+        // Gradient sky
+        const gradient = ctx.createLinearGradient(0, 0, 0, this.canvasHeight);
+        gradient.addColorStop(0, '#FFD89B');
+        gradient.addColorStop(0.5, '#FFCC66');
+        gradient.addColorStop(1, '#DEB887');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+        // Draw dunes
+        this.backgroundElements.forEach(elem => {
+            const y = (elem.y + this.scrollY * 0.3) % (this.canvasHeight * 2);
+
+            if (elem.type === 'dune') {
+                ctx.fillStyle = '#D2B48C';
+                ctx.beginPath();
+                ctx.moveTo(elem.x - elem.width / 2, y + elem.height);
+                ctx.quadraticCurveTo(elem.x, y - elem.height, elem.x + elem.width / 2, y + elem.height);
+                ctx.fill();
+            } else if (elem.type === 'cactus') {
+                // Main stem
+                ctx.fillStyle = '#228B22';
+                ctx.fillRect(elem.x, y, 8, elem.height);
+
+                // Arms
+                ctx.fillRect(elem.x - 8, y + elem.height * 0.3, 8, 6);
+                ctx.fillRect(elem.x - 8, y + elem.height * 0.3 - 10, 6, 10);
+
+                ctx.fillRect(elem.x + 8, y + elem.height * 0.5, 8, 6);
+                ctx.fillRect(elem.x + 10, y + elem.height * 0.5 - 8, 6, 8);
+            } else if (elem.type === 'rock') {
+                ctx.fillStyle = '#8B7355';
+                ctx.beginPath();
+                ctx.arc(elem.x, y, elem.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#6B5344';
+                ctx.beginPath();
+                ctx.arc(elem.x - 2, y - 2, elem.size * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        // Heat shimmer effect
+        this.parallaxElements.forEach(elem => {
+            if (elem.type === 'shimmer') {
+                ctx.save();
+                ctx.globalAlpha = 0.1;
+                ctx.fillStyle = '#fff';
+                for (let x = 0; x < this.canvasWidth; x += 30) {
+                    const shimmerY = elem.y + Math.sin(x * 0.1 + elem.phase) * 5;
+                    ctx.fillRect(x, shimmerY, 20, 2);
+                }
+                ctx.restore();
+            }
+        });
+    }
+
+    drawSpace(ctx) {
+        // Deep space background
+        ctx.fillStyle = this.skyColor;
+        ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+
+        // Draw nebulae (parallax)
+        this.parallaxElements.forEach(elem => {
+            if (elem.type === 'nebula') {
+                const gradient = ctx.createRadialGradient(
+                    elem.x + elem.width / 2, elem.y + elem.height / 2, 0,
+                    elem.x + elem.width / 2, elem.y + elem.height / 2, elem.width / 2
+                );
+                gradient.addColorStop(0, elem.color);
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(elem.x, elem.y, elem.width, elem.height);
+            }
+        });
+
+        // Draw galaxies
+        this.backgroundElements.forEach(elem => {
+            const y = (elem.y + this.scrollY * 0.2) % (this.canvasHeight * 2) - 200;
+
+            if (elem.type === 'galaxy') {
+                ctx.save();
+                ctx.translate(elem.x, y);
+                ctx.rotate(elem.rotation);
+
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, elem.size);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                gradient.addColorStop(0.3, elem.color);
+                gradient.addColorStop(1, 'transparent');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, elem.size, elem.size * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            } else if (elem.type === 'star') {
+                const brightness = elem.brightness * (0.7 + Math.sin(elem.phase || 0) * 0.3);
+                ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                ctx.beginPath();
+                ctx.arc(elem.x, y, elem.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        // Draw shooting stars
+        this.parallaxElements.forEach(elem => {
+            if (elem.type === 'shootingStar' && elem.active) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(elem.x, elem.y);
+                ctx.lineTo(elem.x - elem.length, elem.y - elem.length * 1.5);
+                ctx.stroke();
+
+                // Glow
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(elem.x, elem.y);
+                ctx.lineTo(elem.x - elem.length * 0.5, elem.y - elem.length * 0.75);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        });
+    }
+
+    drawCloud(ctx, x, y, width) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+
+        // Main cloud body
+        ctx.beginPath();
+        ctx.arc(x + width * 0.3, y + 15, 15, 0, Math.PI * 2);
+        ctx.arc(x + width * 0.5, y + 10, 20, 0, Math.PI * 2);
+        ctx.arc(x + width * 0.7, y + 15, 15, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    getLevelName() {
+        const names = ['Grassland', 'Beach', 'Desert', 'Space'];
+        return names[this.levelNumber - 1] || 'Unknown';
+    }
+}
+
+// Export
+window.Level = Level;
+
+// Dragon's Flight - Main Game Controller
+
+class Game {
+    constructor() {
+        // Canvas setup
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.ctx.imageSmoothingEnabled = false;
+
+        // Game dimensions
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
+
+        // Sprite renderer
+        this.spriteRenderer = new SpriteRenderer(this.ctx);
+
+        // Game state
+        this.state = 'menu'; // menu, intro, playing, paused, bossWarning, boss, levelComplete, gameOver, victory
+        this.currentLevel = 1;
+        this.maxLevels = 4;
+
+        // Score
+        this.score = 0;
+        this.highScore = this.loadHighScore();
+
+        // Game objects
+        this.dragon = null;
+        this.fireballs = [];
+        this.enemies = [];
+        this.enemyBullets = [];
+        this.explosions = [];
+        this.boss = null;
+        this.level = null;
+        this.enemySpawner = null;
+
+        // Timers
+        this.lastTime = 0;
+        this.bossWarningTimer = 0;
+        this.levelCompleteTimer = 0;
+
+        // Input
+        this.keys = {};
+
+        // Intro animation
+        this.introPhase = 0;
+        this.introTimer = 0;
+
+        // Initialize
+        this.init();
+    }
+
+    init() {
+        // Set up event listeners
+        this.setupEventListeners();
+
+        // Update high score display
+        document.getElementById('high-score').textContent = this.highScore;
+
+        // Initialize audio on first interaction
+        document.addEventListener('click', () => {
+            window.audioManager.init();
+        }, { once: true });
+
+        document.addEventListener('keydown', () => {
+            window.audioManager.init();
+        }, { once: true });
+
+        // Start game loop
+        requestAnimationFrame((time) => this.gameLoop(time));
+    }
+
+    setupEventListeners() {
+        // Keyboard input
+        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        document.addEventListener('keyup', (e) => this.handleKeyUp(e));
+
+        // Menu buttons
+        document.getElementById('start-btn').addEventListener('click', () => this.startIntro());
+        document.getElementById('controls-btn').addEventListener('click', () => this.showControls());
+        document.getElementById('back-btn').addEventListener('click', () => this.showMenu());
+
+        // Pause menu
+        document.getElementById('resume-btn').addEventListener('click', () => this.resumeGame());
+        document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
+        document.getElementById('quit-btn').addEventListener('click', () => this.quitToMenu());
+
+        // Game over
+        document.getElementById('retry-btn').addEventListener('click', () => this.restartGame());
+        document.getElementById('menu-btn').addEventListener('click', () => this.quitToMenu());
+
+        // Level complete
+        document.getElementById('next-level-btn').addEventListener('click', () => this.nextLevel());
+
+        // Victory
+        document.getElementById('victory-restart-btn').addEventListener('click', () => this.restartGame());
+        document.getElementById('victory-menu-btn').addEventListener('click', () => this.quitToMenu());
+    }
+
+    handleKeyDown(e) {
+        this.keys[e.code] = true;
+
+        // Prevent default for game keys
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+            e.preventDefault();
+        }
+
+        // Pause toggle
+        if ((e.code === 'KeyP' || e.code === 'Escape') && this.state === 'playing') {
+            this.pauseGame();
+        } else if ((e.code === 'KeyP' || e.code === 'Escape') && this.state === 'paused') {
+            this.resumeGame();
+        }
+
+        // Skip intro
+        if (e.code === 'Space' && this.state === 'intro') {
+            this.startGame();
+        }
+    }
+
+    handleKeyUp(e) {
+        this.keys[e.code] = false;
+    }
+
+    gameLoop(currentTime) {
+        const deltaTime = currentTime - this.lastTime;
+        this.lastTime = currentTime;
+
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.width, this.height);
+
+        // Update and draw based on state
+        switch (this.state) {
+            case 'menu':
+                this.drawMenuBackground();
+                break;
+
+            case 'intro':
+                this.updateIntro(deltaTime);
+                this.drawIntro();
+                break;
+
+            case 'playing':
+            case 'boss':
+                this.update(deltaTime);
+                this.draw();
+                break;
+
+            case 'bossWarning':
+                this.updateBossWarning(deltaTime);
+                this.draw();
+                break;
+
+            case 'paused':
+                this.draw();
+                break;
+
+            case 'levelComplete':
+                this.updateLevelComplete(deltaTime);
+                this.draw();
+                break;
+
+            case 'gameOver':
+            case 'victory':
+                this.draw();
+                break;
+        }
+
+        requestAnimationFrame((time) => this.gameLoop(time));
+    }
+
+    // Menu functions
+    showMenu() {
+        this.state = 'menu';
+        this.hideAllMenus();
+        document.getElementById('start-menu').classList.remove('hidden');
+        document.getElementById('hud').classList.add('hidden');
+    }
+
+    showControls() {
+        this.hideAllMenus();
+        document.getElementById('controls-screen').classList.remove('hidden');
+        window.audioManager.playMenuSelect();
+    }
+
+    hideAllMenus() {
+        document.querySelectorAll('.menu').forEach(menu => menu.classList.add('hidden'));
+    }
+
+    // Intro sequence
+    startIntro() {
+        window.audioManager.init();
+        window.audioManager.playMenuSelect();
+        this.state = 'intro';
+        this.introPhase = 0;
+        this.introTimer = 0;
+        this.hideAllMenus();
+    }
+
+    updateIntro(deltaTime) {
+        this.introTimer += deltaTime;
+
+        // Intro phases:
+        // 0: Show title (0-2s)
+        // 1: Show dragon (2-4s)
+        // 2: Dragon takes off (4-6s)
+        // 3: Start game
+
+        if (this.introTimer > 6000) {
+            this.startGame();
+        } else if (this.introTimer > 4000) {
+            this.introPhase = 2;
+        } else if (this.introTimer > 2000) {
+            this.introPhase = 1;
+        }
+    }
+
+    drawIntro() {
+        // Background
+        this.ctx.fillStyle = '#1a1a2e';
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        // Stars
+        for (let i = 0; i < 50; i++) {
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + Math.random() * 0.7})`;
+            this.ctx.fillRect(
+                (i * 73) % this.width,
+                (i * 137) % this.height,
+                2, 2
+            );
+        }
+
+        // Title
+        this.ctx.fillStyle = '#ff6b35';
+        this.ctx.font = '24px "Press Start 2P", monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+
+        const titleY = this.introPhase >= 1 ? 100 : this.height / 2 - 50;
+        this.ctx.fillText("DRAGON'S", this.width / 2, titleY);
+        this.ctx.fillText("FLIGHT", this.width / 2, titleY + 35);
+
+        // Dragon
+        if (this.introPhase >= 1) {
+            let dragonY = this.height / 2;
+            if (this.introPhase === 2) {
+                // Take off animation
+                const takeoffProgress = (this.introTimer - 4000) / 2000;
+                dragonY = this.height / 2 - takeoffProgress * 200;
+            }
+
+            // Draw dragon
+            const frame = Math.floor(this.introTimer / 100) % 3;
+            const frameNames = ['frame1', 'frame2', 'frame3'];
+            this.spriteRenderer.drawSprite(
+                DRAGON_SPRITES[frameNames[frame]],
+                this.width / 2 - 32,
+                dragonY,
+                2
+            );
+
+            // Draw fire trail during takeoff
+            if (this.introPhase === 2) {
+                for (let i = 0; i < 8; i++) {
+                    const alpha = 1 - i * 0.12;
+                    this.ctx.fillStyle = `rgba(255, ${100 + i * 20}, 0, ${alpha})`;
+                    this.ctx.beginPath();
+                    this.ctx.arc(
+                        this.width / 2 + Math.random() * 20 - 10,
+                        dragonY + 80 + i * 18 + Math.random() * 15,
+                        12 - i,
+                        0, Math.PI * 2
+                    );
+                    this.ctx.fill();
+                }
+            }
+        }
+
+        // Press space to start
+        if (this.introPhase >= 1) {
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.font = '10px "Press Start 2P", monospace';
+            const alpha = 0.5 + Math.sin(this.introTimer * 0.005) * 0.5;
+            this.ctx.globalAlpha = alpha;
+            this.ctx.fillText('PRESS SPACE TO START', this.width / 2, this.height - 50);
+            this.ctx.globalAlpha = 1;
+        }
+    }
+
+    // Game functions
+    startGame() {
+        this.state = 'playing';
+        this.currentLevel = 1;
+        this.score = 0;
+
+        // Initialize dragon
+        this.dragon = new Dragon(this.width / 2 - 32, this.height - 100);
+
+        // Initialize level
+        this.initLevel(this.currentLevel);
+
+        // Show HUD
+        document.getElementById('hud').classList.remove('hidden');
+        this.updateHUD();
+
+        // Start music
+        window.audioManager.startMusic(this.currentLevel);
+    }
+
+    initLevel(levelNum) {
+        // Clear objects
+        this.fireballs = [];
+        this.enemies = [];
+        this.enemyBullets = [];
+        this.explosions = [];
+        this.boss = null;
+
+        // Create level
+        this.level = new Level(levelNum, this.width, this.height);
+
+        // Create enemy spawner
+        this.enemySpawner = new EnemySpawner(this.width);
+        this.enemySpawner.setLevel(levelNum);
+
+        // Reset dragon position
+        if (this.dragon) {
+            this.dragon.reset(this.width / 2 - 32, this.height - 100);
+        }
+
+        // Update HUD
+        document.getElementById('current-level').textContent = levelNum;
+    }
+
+    update(deltaTime) {
+        // Update level background
+        if (this.level) {
+            this.level.update(deltaTime);
+        }
+
+        // Update dragon input
+        if (this.dragon) {
+            this.dragon.moving.up = this.keys['ArrowUp'];
+            this.dragon.moving.down = this.keys['ArrowDown'];
+            this.dragon.moving.left = this.keys['ArrowLeft'];
+            this.dragon.moving.right = this.keys['ArrowRight'];
+
+            // Shooting
+            if (this.keys['Space']) {
+                this.dragon.shoot(this.fireballs);
+            }
+
+            // Update dragon
+            this.dragon.update(deltaTime, this.width, this.height);
+        }
+
+        // Update fireballs
+        this.fireballs.forEach(fb => fb.update(deltaTime));
+        this.fireballs = this.fireballs.filter(fb => fb.active);
+
+        // Update enemies or boss
+        if (this.state === 'playing') {
+            // Spawn enemies
+            const stillSpawning = this.enemySpawner.update(deltaTime, this.enemies);
+
+            // Update enemies
+            this.enemies.forEach(enemy => {
+                enemy.update(deltaTime, this.width, this.height, this.dragon.x, this.dragon.y);
+                enemy.shoot(this.enemyBullets, this.dragon.x + 16, this.dragon.y + 16);
+            });
+            this.enemies = this.enemies.filter(e => e.active);
+
+            // Check for boss phase
+            if (!stillSpawning && this.enemies.length === 0) {
+                this.startBossWarning();
+            }
+        } else if (this.state === 'boss' && this.boss) {
+            this.boss.update(deltaTime, this.dragon.x, this.dragon.y, this.enemyBullets, this.width);
+
+            if (this.boss.isDefeated()) {
+                this.onBossDefeated();
+            }
+        }
+
+        // Update enemy bullets
+        this.enemyBullets.forEach(b => b.update(deltaTime, this.height));
+        this.enemyBullets = this.enemyBullets.filter(b => b.active);
+
+        // Update explosions
+        this.explosions.forEach(e => e.update(deltaTime));
+        this.explosions = this.explosions.filter(e => e.active);
+
+        // Collision detection
+        this.checkCollisions();
+
+        // Update HUD
+        this.updateHUD();
+
+        // Check game over
+        if (this.dragon && !this.dragon.isAlive()) {
+            this.gameOver();
+        }
+    }
+
+    checkCollisions() {
+        const dragonHitbox = this.dragon.getHitbox();
+
+        // Fireballs vs Enemies
+        this.fireballs.forEach(fb => {
+            if (!fb.active) return;
+            const fbHitbox = fb.getHitbox();
+
+            // Check enemies
+            this.enemies.forEach(enemy => {
+                if (!enemy.active) return;
+                if (this.checkHitboxCollision(fbHitbox, enemy.getHitbox())) {
+                    fb.active = false;
+                    if (enemy.takeDamage(1)) {
+                        // Enemy destroyed
+                        this.score += enemy.score;
+                        this.explosions.push(new Explosion(
+                            enemy.x + enemy.width / 2,
+                            enemy.y + enemy.height / 2,
+                            'small'
+                        ));
+                        window.audioManager.playExplosion();
+                    }
+                }
+            });
+
+            // Check boss
+            if (this.boss && !this.boss.defeated) {
+                if (this.checkHitboxCollision(fbHitbox, this.boss.getHitbox())) {
+                    fb.active = false;
+                    this.boss.takeDamage(1);
+                }
+            }
+        });
+
+        // Enemy bullets vs Dragon
+        if (!this.dragon.invincible) {
+            this.enemyBullets.forEach(bullet => {
+                if (!bullet.active) return;
+                if (this.checkHitboxCollision(bullet.getHitbox(), dragonHitbox)) {
+                    bullet.active = false;
+                    this.dragon.takeDamage(1);
+                }
+            });
+        }
+
+        // Enemies vs Dragon (collision damage)
+        if (!this.dragon.invincible) {
+            this.enemies.forEach(enemy => {
+                if (!enemy.active) return;
+                if (this.checkHitboxCollision(enemy.getHitbox(), dragonHitbox)) {
+                    this.dragon.takeDamage(1);
+                    enemy.takeDamage(enemy.health); // Destroy enemy on collision
+                    this.explosions.push(new Explosion(
+                        enemy.x + enemy.width / 2,
+                        enemy.y + enemy.height / 2,
+                        'small'
+                    ));
+                }
+            });
+        }
+
+        // Boss vs Dragon
+        if (this.boss && !this.boss.defeated && !this.dragon.invincible) {
+            if (this.checkHitboxCollision(this.boss.getHitbox(), dragonHitbox)) {
+                this.dragon.takeDamage(2); // Boss collision does more damage
+            }
+        }
+    }
+
+    checkHitboxCollision(a, b) {
+        return a.x < b.x + b.width &&
+               a.x + a.width > b.x &&
+               a.y < b.y + b.height &&
+               a.y + a.height > b.y;
+    }
+
+    draw() {
+        // Draw level background
+        if (this.level) {
+            this.level.draw(this.ctx);
+        }
+
+        // Draw explosions (behind)
+        this.explosions.forEach(e => e.draw(this.ctx));
+
+        // Draw enemies
+        this.enemies.forEach(enemy => enemy.draw(this.ctx, this.spriteRenderer));
+
+        // Draw boss
+        if (this.boss) {
+            this.boss.draw(this.ctx, this.spriteRenderer);
+        }
+
+        // Draw enemy bullets
+        this.enemyBullets.forEach(b => b.draw(this.ctx, this.spriteRenderer));
+
+        // Draw fireballs
+        this.fireballs.forEach(fb => fb.draw(this.ctx, this.spriteRenderer));
+
+        // Draw dragon
+        if (this.dragon) {
+            this.dragon.draw(this.ctx, this.spriteRenderer);
+        }
+
+        // Draw boss warning
+        if (this.state === 'bossWarning') {
+            this.drawBossWarning();
+        }
+    }
+
+    drawMenuBackground() {
+        // Simple animated background for menu
+        this.ctx.fillStyle = '#1a1a2e';
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        // Animated stars
+        const time = Date.now() * 0.001;
+        for (let i = 0; i < 30; i++) {
+            const x = (i * 73 + time * 20) % this.width;
+            const y = (i * 137) % this.height;
+            const brightness = 0.3 + Math.sin(time + i) * 0.3;
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+            this.ctx.fillRect(x, y, 2, 2);
+        }
+    }
+
+    // Boss warning
+    startBossWarning() {
+        this.state = 'bossWarning';
+        this.bossWarningTimer = 0;
+        window.audioManager.playBossWarning();
+    }
+
+    updateBossWarning(deltaTime) {
+        this.bossWarningTimer += deltaTime;
+
+        if (this.bossWarningTimer > 2000) {
+            this.startBoss();
+        }
+
+        // Still update background and dragon
+        if (this.level) this.level.update(deltaTime);
+        if (this.dragon) {
+            this.dragon.moving.up = this.keys['ArrowUp'];
+            this.dragon.moving.down = this.keys['ArrowDown'];
+            this.dragon.moving.left = this.keys['ArrowLeft'];
+            this.dragon.moving.right = this.keys['ArrowRight'];
+            this.dragon.update(deltaTime, this.width, this.height);
+        }
+    }
+
+    drawBossWarning() {
+        // Flashing warning text
+        const alpha = 0.5 + Math.sin(this.bossWarningTimer * 0.01) * 0.5;
+        this.ctx.save();
+        this.ctx.globalAlpha = alpha;
+        this.ctx.fillStyle = '#ff0000';
+        this.ctx.font = '20px "Press Start 2P", monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('WARNING', this.width / 2, this.height / 2 - 20);
+        this.ctx.fillText('BOSS APPROACHING', this.width / 2, this.height / 2 + 20);
+        this.ctx.restore();
+    }
+
+    startBoss() {
+        this.state = 'boss';
+        this.boss = new Boss(this.width, this.currentLevel);
+        window.audioManager.startMusic('boss');
+    }
+
+    onBossDefeated() {
+        this.score += this.boss.score;
+
+        if (this.currentLevel >= this.maxLevels) {
+            this.victory();
+        } else {
+            this.levelComplete();
+        }
+    }
+
+    // Level management
+    levelComplete() {
+        this.state = 'levelComplete';
+        this.levelCompleteTimer = 0;
+
+        document.getElementById('level-score-value').textContent = this.score;
+        document.getElementById('level-complete').classList.remove('hidden');
+
+        window.audioManager.stopMusic();
+        window.audioManager.playLevelComplete();
+    }
+
+    updateLevelComplete(deltaTime) {
+        this.levelCompleteTimer += deltaTime;
+
+        // Still draw background
+        if (this.level) this.level.update(deltaTime);
+    }
+
+    nextLevel() {
+        this.hideAllMenus();
+        this.currentLevel++;
+        this.initLevel(this.currentLevel);
+        this.state = 'playing';
+        window.audioManager.startMusic(this.currentLevel);
+        window.audioManager.playMenuSelect();
+    }
+
+    // Game state management
+    pauseGame() {
+        this.state = 'paused';
+        document.getElementById('pause-menu').classList.remove('hidden');
+        window.audioManager.stopMusic();
+    }
+
+    resumeGame() {
+        this.state = this.boss ? 'boss' : 'playing';
+        this.hideAllMenus();
+        window.audioManager.playMenuSelect();
+        window.audioManager.startMusic(this.boss ? 'boss' : this.currentLevel);
+    }
+
+    restartGame() {
+        this.hideAllMenus();
+        this.startGame();
+        window.audioManager.playMenuSelect();
+    }
+
+    quitToMenu() {
+        window.audioManager.stopMusic();
+        window.audioManager.playMenuSelect();
+        this.showMenu();
+    }
+
+    gameOver() {
+        this.state = 'gameOver';
+
+        // Check high score
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            this.saveHighScore();
+            document.getElementById('new-high-score').classList.remove('hidden');
+            document.getElementById('high-score').textContent = this.highScore;
+        } else {
+            document.getElementById('new-high-score').classList.add('hidden');
+        }
+
+        document.getElementById('final-score-value').textContent = this.score;
+        document.getElementById('game-over').classList.remove('hidden');
+
+        window.audioManager.stopMusic();
+        window.audioManager.playGameOver();
+    }
+
+    victory() {
+        this.state = 'victory';
+
+        // Check high score
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            this.saveHighScore();
+            document.getElementById('victory-high-score').classList.remove('hidden');
+            document.getElementById('high-score').textContent = this.highScore;
+        } else {
+            document.getElementById('victory-high-score').classList.add('hidden');
+        }
+
+        document.getElementById('victory-score-value').textContent = this.score;
+        document.getElementById('victory-screen').classList.remove('hidden');
+
+        window.audioManager.stopMusic();
+        window.audioManager.playLevelComplete();
+    }
+
+    // HUD
+    updateHUD() {
+        if (!this.dragon) return;
+
+        // Update health hearts
+        const heartsContainer = document.getElementById('health-hearts');
+        heartsContainer.innerHTML = '';
+        for (let i = 0; i < this.dragon.maxHealth; i++) {
+            const heart = document.createElement('div');
+            heart.className = 'heart' + (i >= this.dragon.health ? ' empty' : '');
+            heartsContainer.appendChild(heart);
+        }
+
+        // Update lives
+        document.getElementById('lives-count').textContent = this.dragon.lives;
+
+        // Update score
+        document.getElementById('current-score').textContent = this.score;
+    }
+
+    // High score management
+    loadHighScore() {
+        const saved = localStorage.getItem('dragonsFlight_highScore');
+        return saved ? parseInt(saved, 10) : 0;
+    }
+
+    saveHighScore() {
+        localStorage.setItem('dragonsFlight_highScore', this.highScore.toString());
+    }
+}
+
+// Start game when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.game = new Game();
+});
+
+    </script>
+</body>
+</html>
